@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"os/exec"
@@ -183,6 +184,7 @@ type test struct {
 	params []int
 }
 
+const PurpleBookXP = 20000
 var reIter = regexp.MustCompile(`iteration=(\d+)`)
 var reWorkers = regexp.MustCompile(`workers=(\d+)`)
 
@@ -308,14 +310,54 @@ func desc(t test, sd jsondata) (dsc string) {
 	return ""
 }
 
+talentmora = []int{125,175,250,300,375,1200,2600,4500,7000}
+talentbks = []int{3,6,12,18,27,36,54,108,144}
+
 type materials struct {
-	info  string
-	DPS   float64
-	resin float64
+	mora int
+	books float64 //measured in purple books
+	bossmats int //for example, hoarfrost core. Currently we assume gemstones aren't important/worth counting resin for because of azoth dust, but in the future we should have options instead of assumptions.
+	talentbooks int //measured in teachings
+	weaponmats int //measured in the lowest level
+	artifacts int //not used yet
 }
 
-resin(t test) {
+func resin(t test, sd jsondata) (rsn float64) {
+	mats := materials{0,0.0,0,0,0,0}
 
+	switch t.typ {
+	case "baseline":
+		return -1
+	case "level":
+		mats.books += xptolvl(sd.Characters[t.params[0]].Level, t.params[1])/PurpleBookXP
+		mats.mora = int(math.Floor(mats.books/5.0))
+		if(t.params[2] != sd.Characters[t.params[0]].MaxLvl) { //if we ascended
+			mats.mora += 20000 * (t.params[2]-30)/10
+			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0 * (float64(t.params[2])-30.0)/10.0 / 2.0)) + int(math.Max(0,float64(t.params[2])-80.0)/5.0)
+		}
+	case "talent":
+		mats.mora += talentmora[t.params[2]-2]*100;
+		mats.talentbooks += talentbks[t.params[2]-2]
+		if(t.params[3]==1) {
+			mats.books += xptolvl(sd.Characters[t.params[0]].Level, t.params[1])/PurpleBookXP
+		mats.mora += int(math.Floor(mats.books/5.0))
+		if(t.params[2] != sd.Characters[t.params[0]].MaxLvl) { //if we ascended
+			mats.mora += 20000 * (t.params[2]-30)/10
+			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0 * (float64(t.params[2])-30.0)/10.0 / 2.0)) + int(math.Max(0,float64(t.params[2])-80.0)/5.0)
+		}
+		}
+	case "weapon":
+		mats.mora += 
+		if(t.params[3] != sd.Characters[t.params[0]].Weapon.MaxLvl) { //if ascended
+		mats.weaponmats += wpmats[t.params[1]][(t.params[3]-30)/10 - 1]
+		mats.mora += 
+		}
+	//case "artifact" in future... hopefully...
+	default:
+		fmt.Printf("invalid test type %v??", t.typ)
+	}
+
+	return resinformats(mats)
 }
 
 //these 3 test functions below should probably go in a diff file
