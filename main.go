@@ -6,20 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 )
 
 var referencesim = "" //link to the gcsim that gives rotation, er reqs and optimization priority
@@ -43,7 +40,7 @@ func main() {
 		fmt.Printf("Error encountered, ending script: %+v\n", err)
 	}
 
-	fmt.Print("\nPress 'Enter' to continue...")
+	fmt.Print("\ntesting complete (press enter to exit)")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
@@ -229,7 +226,7 @@ func readURL(url string) (data2 jsondata) {
 	return data
 }
 
-func loadData(dir string) ([]pack, error) {
+/*func loadData(dir string) ([]pack, error) {
 	var data []pack
 
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
@@ -258,7 +255,7 @@ func loadData(dir string) ([]pack, error) {
 	})
 
 	return data, err
-}
+}*/
 
 func runTest(t test, config string) (res result) {
 	var simdata jsondata
@@ -278,6 +275,47 @@ func runTest(t test, config string) (res result) {
 	}
 
 	return generateResult(t, simdata)
+}
+
+func generateResult(t test, sd jsondata) (res2 result) {
+	return result{desc(t, sd),sd.DPS,resin(t)}
+}
+
+func desc(t test, sd jsondata) (dsc string) {
+	switch t.typ {
+	case "baseline":
+		return "current"
+	case "level":
+		return sd.Characters[t.params[0]].Name + " to " + strconv.Itoa(t.params[1]) + "/" + strconv.Itoa(t.params[2])
+	case "talent":
+		talent := "aa"
+		if(t.params[1]==1) {
+			talent = "e"
+		} else if(t.params[1]==2) {
+			talent = "q"
+		}
+		ascension := ""
+		if(t.params[3]==1) {
+			ascension = " (requires ascension)"
+		}
+		return sd.Characters[t.params[0]].Name + " " + talent + " to " + strconv.Itoa(t.params[2]) + ascension
+	case "weapon":
+		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
+	//case "artifact" in future... hopefully...
+	default:
+		fmt.Printf("invalid test type %v??", t.typ)
+	}
+	return ""
+}
+
+type materials struct {
+	info  string
+	DPS   float64
+	resin float64
+}
+
+resin(t test) {
+
 }
 
 //these 3 test functions below should probably go in a diff file
@@ -333,6 +371,24 @@ func runTalentTest(t test, config string) (c string) { //params for talent test:
 	newline := lines[curline][:start]
 	newline += strconv.Itoa(t.params[2])
 	newline += lines[curline][end:]
+	lines[curline] = newline
+
+	return strings.Join(lines, "\n")
+}
+
+func runWeaponTest(t test, config string) (c string) { //params for weapon test: 0: charid 1: weapon *s 2: new level 3: new max level
+	lines := strings.Split(config, "\n")
+	count := 0
+	curline := -1
+	for count <= t.params[0] {
+		curline++
+		if strings.Contains(lines[curline], "refine=") {
+			count++
+		}
+	}
+
+	newline := lines[curline][0 : strings.Index(lines[curline], "lvl")+4]
+	newline += strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3]) + ";"
 	lines[curline] = newline
 
 	return strings.Join(lines, "\n")
