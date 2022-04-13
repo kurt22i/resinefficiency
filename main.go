@@ -2,9 +2,7 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"compress/gzip"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,8 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/joho/godotenv"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -125,14 +121,14 @@ func download(path string, url string) error {
 	changed  bool
 }*/
 
-type char struct {
+/*type char struct {
 	Name    string       `yaml:"name" json:"name"`
 	Con     int          `yaml:"con" json:"con"`
 	Weapon  string       `yaml:"weapon" json:"weapon"`
 	Refine  int          `yaml:"refine" json:"refine"`
 	ER      float64      `yaml:"er" json:"er"`
 	Talents TalentDetail `yaml:"talents" json:"talents"`
-}
+}*/
 
 type TalentDetail struct {
 	Attack int `json:"attack"`
@@ -141,8 +137,17 @@ type TalentDetail struct {
 }
 
 type jsondata struct {
-	Config    string  `json:"config"`
-	Team      []char  `json:"team"`
+	Config     string `json:"config"`
+	Characters []struct {
+		Name   string `json:"name"`
+		Cons   int    `json:"cons"`
+		Weapon struct {
+			Name   string `json:"name"`
+			Refine int    `json:"refine"`
+		} `json:"weapon"`
+		Stats   []float64    `json:"stats"`
+		Talents TalentDetail `json:"talents"`
+	} `json:"char_details"`
 	DPS       float64 `json:"dps"`
 	NumTarget int     `json:"target_count"`
 }
@@ -270,9 +275,12 @@ func runTest(t test, config string) (res result) {
 	return generateResult(t, simdata)
 }
 
-var reMode = regexp.MustCompile(`mode=(\w+)`)
+//these 3 test functions below should probably go in a diff file
+func runLevelTest(t test, config string) (c string) {
 
-func process(data []pack, latest string, force bool) error {
+}
+
+/*func process(data []pack, latest string, force bool) error {
 	//make a tmp folder if it doesn't exist
 	if _, err := os.Stat("./tmp"); !os.IsNotExist(err) {
 		fmt.Println("tmp folder already exists, deleting...")
@@ -329,9 +337,9 @@ func process(data []pack, latest string, force bool) error {
 	}
 
 	return nil
-}
+}*/
 
-func readResultJSON(jsonData []byte, p *pack) error {
+/*func readResultJSON(jsonData []byte, p *pack) error {
 
 	var r result
 	err := json.Unmarshal(jsonData, &r)
@@ -360,7 +368,7 @@ func readResultJSON(jsonData []byte, p *pack) error {
 		p.Team = append(p.Team, c)
 	}
 	return nil
-}
+}*/
 
 func writeJSONtoGZ(jsonData []byte, fpath string) error {
 	f, err := os.OpenFile(fpath+".gz", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
@@ -410,174 +418,3 @@ func runSim(cfg string) (data2 jsondata) {
 
 	return data
 }
-
-type viewerData struct {
-	Data        string `json:"data"`
-	Author      string `json:"author"`
-	Description string `json:"description"`
-}
-
-type viewerRes struct {
-	ID string `json:"id"`
-}
-
-func uploadResults(data []pack) error {
-	//read api key from env
-	err := godotenv.Load()
-	if err != nil {
-		return errors.Wrap(err, "error getting env variable")
-	}
-	apiKey := os.Getenv("API_KEY")
-	for i, v := range data {
-		//skip if no change and has a viewer key already
-		if !v.changed && v.ViewerKey != "" {
-			continue
-		}
-		//check if key exists, if not generate one
-		key := v.ViewerKey
-
-		if key == "" {
-			key, err = gonanoid.New()
-			if err != nil {
-				return errors.Wrap(err, "")
-			}
-		}
-
-		//read the gz file
-		gzData, err := os.ReadFile(v.gzPath)
-		if err != nil {
-			return errors.Wrap(err, "reading gz data")
-		}
-		b64string := base64.StdEncoding.EncodeToString(gzData)
-
-		x := viewerData{
-			Data:        b64string,
-			Author:      v.Author,
-			Description: "team database",
-		}
-
-		jsonData, err := json.Marshal(x)
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-
-		fmt.Printf("\tUploading results from %v to viewer: ", v.filepath)
-
-		req, err := http.NewRequest("POST", "https://viewer.gcsim.workers.dev/key", bytes.NewBuffer(jsonData))
-		if err != nil {
-			fmt.Printf("FAILED, error: %v\n", err)
-			return errors.Wrap(err, "")
-		}
-		req.Header.Set("content-type", "application/json")
-		req.Header.Set("API-KEY", apiKey)
-		req.Header.Set("VIEWER_KEY", key)
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			fmt.Printf("FAILED, error: %v\n", err)
-			return errors.Wrap(err, "")
-		}
-		if resp.StatusCode != 200 {
-			log.Println(resp.Status)
-			fmt.Printf("FAILED, error: %v\n", resp.Status)
-			return errors.Wrap(errors.New("http post request failed: "+resp.Status), "request failed")
-		}
-
-		//otherwise decode key from body
-		var res viewerRes
-		err = json.NewDecoder(resp.Body).Decode(&res)
-		if err != nil {
-			fmt.Printf("FAILED, error: %v\n", err)
-			return errors.Wrap(err, "")
-		}
-
-		data[i].ViewerKey = res.ID
-		fmt.Printf("OK, key = %v\n", res.ID)
-	}
-	return nil
-}
-
-func uploadIndex(data []pack) error {
-	//read api key from env
-	err := godotenv.Load()
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-	apiKey := os.Getenv("API_KEY")
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-
-	fmt.Print("Uploading DB index: ")
-
-	req, err := http.NewRequest("POST", "https://viewer.gcsim.workers.dev/db", bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Printf("FAILED, error: %v\n", err)
-		return errors.Wrap(err, "")
-	}
-	req.Header.Set("content-type", "application/json")
-	req.Header.Set("API-KEY", apiKey)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		fmt.Printf("FAILED, error: %v\n", err)
-		return errors.Wrap(err, "")
-	}
-	if resp.StatusCode != 200 {
-		log.Println(resp.Status)
-		fmt.Printf("FAILED, error: %v\n", resp.Status)
-		return errors.Wrap(errors.New("http post request failed: "+resp.Status), "request failed")
-	}
-
-	fmt.Print("OK\n")
-
-	return nil
-}
-
-func saveYaml(data []pack) error {
-	for i := range data {
-
-		//overwrite yaml
-		out, err := yaml.Marshal(data[i])
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-		os.Remove(data[i].filepath)
-		err = os.WriteFile(data[i].filepath, out, 0755)
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-	}
-	return nil
-}
-
-// func cloneRepo() (string, error) {
-// 	//check if tmp folder already exists, if so remove
-// 	if _, err := os.Stat("./tmp"); !os.IsNotExist(err) {
-// 		fmt.Println("tmp folder already exists, deleting...")
-// 		// path/to/whatever exists
-// 		os.RemoveAll("./tmp/")
-// 	}
-
-// 	fmt.Println("Starting to clone git repo...")
-
-// 	r, err := git.PlainClone("./tmp", false, &git.CloneOptions{
-// 		URL:               "https://github.com/genshinsim/gcsim.git",
-// 		RecurseSubmodules: git.DefaultSubmoduleRecursionDepth,
-// 	})
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	ref, err := r.Head()
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	hs := fmt.Sprint(ref.Hash())
-
-// 	fmt.Printf("Git repo cloned successfully, latest hash: %v\n", hs)
-// 	return hs, nil
-// }
