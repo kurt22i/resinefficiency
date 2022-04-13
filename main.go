@@ -30,8 +30,8 @@ var referencesim = "" //link to the gcsim that gives rotation, er reqs and optim
 var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
 var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
 //var domains []string = {"esf"}
-var simsperupgrade = 10000 //iterations to run gcsim at when testing dps gain from upgrades.
-var godatafile = ""        //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
+var simspertest = 10000 //iterations to run gcsim at when testing dps gain from upgrades.
+var godatafile = ""     //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
 
 func main() {
 	/*var d bool
@@ -62,18 +62,18 @@ func run() error {
 	}
 
 	//get json data from url
-	data := readURL(url)
+	data := readURL(referencesim)
 
 	//get baseline result
-	baseline := runTest(nil)
+	baseline := runTest(test{"baseline", []int{0}}, data.Config)
 	printResult(baseline, nil)
 
 	//generate necessary tests
-	tests := getTests(config)
+	tests := getTests(data)
 
 	//run and print the tests (simultaneously, so that users can see data gradually coming in)
 	for _, t := range tests {
-		printResult(runTest(t), baseline)
+		printResult(runTest(t, data.Config), baseline)
 	}
 
 	return nil
@@ -107,7 +107,7 @@ func download(path string, url string) error {
 	return errors.Wrap(err, "")
 }
 
-type pack struct {
+/*type pack struct {
 	Author      string `yaml:"author" json:"author"`
 	Config      string `yaml:"config" json:"config"`
 	Description string `yaml:"description" json:"description"`
@@ -123,7 +123,7 @@ type pack struct {
 	gzPath   string
 	filepath string
 	changed  bool
-}
+}*/
 
 type char struct {
 	Name    string       `yaml:"name" json:"name"`
@@ -176,7 +176,10 @@ type test struct {
 	params []int
 }
 
-func readURL(url string) (data jsondata) {
+var reIter = regexp.MustCompile(`iteration=(\d+)`)
+var reWorkers = regexp.MustCompile(`workers=(\d+)`)
+
+func readURL(url string) (data2 jsondata) {
 	spaceClient := http.Client{
 		Timeout: time.Second * 2, // Timeout after 2 seconds
 	}
@@ -208,6 +211,10 @@ func readURL(url string) (data jsondata) {
 		fmt.Println(err2)
 		return
 	}
+
+	//fix the iterations
+	data.Config = reIter.ReplaceAllString(data.Config, "iteration=10000") //should be using the simspertest variable for this
+	data.Config = reWorkers.ReplaceAllString(data.Config, "workers=30")
 
 	return data
 }
@@ -243,8 +250,26 @@ func loadData(dir string) ([]pack, error) {
 	return data, err
 }
 
-var reIter = regexp.MustCompile(`iteration=(\d+)`)
-var reWorkers = regexp.MustCompile(`workers=(\d+)`)
+func runTest(t test, config string) (res result) {
+	var simdata jsondata
+
+	switch t.typ {
+	case "baseline":
+		simdata = runSim(config)
+	case "level":
+		simdata = runSim(runLevelTest(t, config))
+	case "talent":
+		simdata = runSim(runTalentTest(t, config))
+	case "weapon":
+		simdata = runSim(runWeaponTest(t, config))
+	//case "artifact" in future... hopefully...
+	default:
+		fmt.Printf("invalid test type %v??", t.typ)
+	}
+
+	return generateResult(t, simdata)
+}
+
 var reMode = regexp.MustCompile(`mode=(\w+)`)
 
 func process(data []pack, latest string, force bool) error {
@@ -265,9 +290,6 @@ func process(data []pack, latest string, force bool) error {
 			continue
 		}
 		data[i].changed = true
-		//fix the iterations
-		data[i].Config = reIter.ReplaceAllString(data[i].Config, "iteration=1000")
-		data[i].Config = reWorkers.ReplaceAllString(data[i].Config, "workers=30")
 		//re run sim
 		fmt.Printf("\tRerunning %v\n", data[i].filepath)
 		outPath := fmt.Sprintf("./tmp/%v", time.Now().Nanosecond())
@@ -363,20 +385,30 @@ func getVersion() (string, error) {
 	return hash, nil
 }
 
-func runSim(cfg, path string) error {
+func runSim(cfg string) (data2 jsondata) {
+	path := fmt.Sprintf("./tmp/%v", time.Now().Nanosecond())
+
 	//write config to file
 	err := os.WriteFile(path+".txt", []byte(cfg), 0755)
 	if err != nil {
-		// fmt.Printf("error saving config file: %v\n", err)
-		return errors.Wrap(err, "")
+		fmt.Printf("error saving config file: %v\n", err)
 	}
 	out, err := exec.Command("./gcsim", "-c", path+".txt", "-out", path+".json").Output()
 
 	if err != nil {
 		fmt.Printf("%v\n", string(out))
-		return errors.Wrap(err, "")
 	}
-	return nil
+
+	jsn, err := os.ReadFile(path + ".json")
+
+	data := jsondata{}
+	err2 := json.Unmarshal(jsn, &data)
+	if err2 != nil {
+		fmt.Println(err2)
+		return
+	}
+
+	return data
 }
 
 type viewerData struct {
