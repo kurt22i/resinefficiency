@@ -185,6 +185,7 @@ type test struct {
 }
 
 const PurpleBookXP = 20000
+
 var reIter = regexp.MustCompile(`iteration=(\d+)`)
 var reWorkers = regexp.MustCompile(`workers=(\d+)`)
 
@@ -280,7 +281,7 @@ func runTest(t test, config string) (res result) {
 }
 
 func generateResult(t test, sd jsondata) (res2 result) {
-	return result{desc(t, sd),sd.DPS,resin(t)}
+	return result{desc(t, sd), sd.DPS, resin(t)}
 }
 
 func desc(t test, sd jsondata) (dsc string) {
@@ -291,13 +292,13 @@ func desc(t test, sd jsondata) (dsc string) {
 		return sd.Characters[t.params[0]].Name + " to " + strconv.Itoa(t.params[1]) + "/" + strconv.Itoa(t.params[2])
 	case "talent":
 		talent := "aa"
-		if(t.params[1]==1) {
+		if t.params[1] == 1 {
 			talent = "e"
-		} else if(t.params[1]==2) {
+		} else if t.params[1] == 2 {
 			talent = "q"
 		}
 		ascension := ""
-		if(t.params[3]==1) {
+		if t.params[3] == 1 {
 			ascension = " (requires ascension)"
 		}
 		return sd.Characters[t.params[0]].Name + " " + talent + " to " + strconv.Itoa(t.params[2]) + ascension
@@ -310,47 +311,48 @@ func desc(t test, sd jsondata) (dsc string) {
 	return ""
 }
 
-talentmora = []int{125,175,250,300,375,1200,2600,4500,7000}
-talentbks = []int{3,6,12,18,27,36,54,108,144}
+var talentmora = []int{125, 175, 250, 300, 375, 1200, 2600, 4500, 7000}
+var talentbks = []int{3, 6, 12, 18, 27, 36, 54, 108, 144}
 
 type materials struct {
-	mora int
-	books float64 //measured in purple books
-	bossmats int //for example, hoarfrost core. Currently we assume gemstones aren't important/worth counting resin for because of azoth dust, but in the future we should have options instead of assumptions.
-	talentbooks int //measured in teachings
-	weaponmats int //measured in the lowest level
-	artifacts int //not used yet
+	mora        int
+	books       float64 //measured in purple books
+	bossmats    int     //for example, hoarfrost core. Currently we assume gemstones aren't important/worth counting resin for because of azoth dust, but in the future we should have options instead of assumptions.
+	talentbooks int     //measured in teachings
+	weaponmats  int     //measured in the lowest level
+	artifacts   int     //not used yet
 }
 
+var wpmats = [][]int{{}, {}, {5, 5 * 3, 9 * 3, 5 * 9, 9 * 9, 6 * 27}}
+var wpmora = [][]int{{}, {}, {10, 20, 30, 45, 55, 65}}
+
 func resin(t test, sd jsondata) (rsn float64) {
-	mats := materials{0,0.0,0,0,0,0}
+	mats := materials{0, 0.0, 0, 0, 0, 0}
 
 	switch t.typ {
 	case "baseline":
 		return -1
 	case "level":
-		mats.books += xptolvl(sd.Characters[t.params[0]].Level, t.params[1])/PurpleBookXP
-		mats.mora = int(math.Floor(mats.books/5.0))
-		if(t.params[2] != sd.Characters[t.params[0]].MaxLvl) { //if we ascended
-			mats.mora += 20000 * (t.params[2]-30)/10
-			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0 * (float64(t.params[2])-30.0)/10.0 / 2.0)) + int(math.Max(0,float64(t.params[2])-80.0)/5.0)
+		mats.books += xptolvl(sd.Characters[t.params[0]].Level, t.params[1]) / PurpleBookXP
+		mats.mora = int(math.Floor(mats.books / 5.0))
+		if t.params[2] != sd.Characters[t.params[0]].MaxLvl { //if we ascended
+			mats.mora += 20000 * (t.params[2] - 30) / 10
+			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
 		}
 	case "talent":
-		mats.mora += talentmora[t.params[2]-2]*100;
+		mats.mora += talentmora[t.params[2]-2] * 100
 		mats.talentbooks += talentbks[t.params[2]-2]
-		if(t.params[3]==1) {
-			mats.books += xptolvl(sd.Characters[t.params[0]].Level, t.params[1])/PurpleBookXP
-		mats.mora += int(math.Floor(mats.books/5.0))
-		if(t.params[2] != sd.Characters[t.params[0]].MaxLvl) { //if we ascended
-			mats.mora += 20000 * (t.params[2]-30)/10
-			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0 * (float64(t.params[2])-30.0)/10.0 / 2.0)) + int(math.Max(0,float64(t.params[2])-80.0)/5.0)
-		}
+		if t.params[3] == 1 {
+			mats.books += xptolvl(sd.Characters[t.params[0]].Level, t.params[1]) / PurpleBookXP
+			mats.mora += int(math.Floor(mats.books / 5.0))
+			mats.mora += 20000 * (t.params[2] - 30) / 10
+			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
 		}
 	case "weapon":
-		mats.mora += 
-		if(t.params[3] != sd.Characters[t.params[0]].Weapon.MaxLvl) { //if ascended
-		mats.weaponmats += wpmats[t.params[1]][(t.params[3]-30)/10 - 1]
-		mats.mora += 
+		mats.mora += (wpexp[t.params[1]-3][t.params[2]-1] - wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1]) / 10
+		if t.params[3] != sd.Characters[t.params[0]].Weapon.MaxLvl { //if we ascended
+			mats.weaponmats += wpmats[t.params[1]-3][(t.params[3]-30)/10-1]
+			mats.mora += wpmora[t.params[1]-3][(t.params[3]-30)/10-1]
 		}
 	//case "artifact" in future... hopefully...
 	default:
@@ -358,6 +360,10 @@ func resin(t test, sd jsondata) (rsn float64) {
 	}
 
 	return resinformats(mats)
+}
+
+func xptolvl(l1 int, l2 int) (xp float64) {
+	return float64(crexp[l2] - crexp[l1])
 }
 
 //these 3 test functions below should probably go in a diff file
@@ -573,4 +579,376 @@ func runSim(cfg string) (data2 jsondata) {
 	}
 
 	return data
+}
+
+var crexp = []int{
+	0,
+	1000,
+	2325,
+	4025,
+	6175,
+	8800,
+	11950,
+	15675,
+	20025,
+	25025,
+	30725,
+	37175,
+	44400,
+	52450,
+	61375,
+	71200,
+	81950,
+	93675,
+	106400,
+	120175,
+	135050,
+	151850,
+	169850,
+	189100,
+	209650,
+	231525,
+	254775,
+	279425,
+	305525,
+	333100,
+	362200,
+	392850,
+	425100,
+	458975,
+	494525,
+	531775,
+	570750,
+	611500,
+	654075,
+	698500,
+	744800,
+	795425,
+	848125,
+	902900,
+	959800,
+	1018875,
+	1080150,
+	1143675,
+	1209475,
+	1277600,
+	1348075,
+	1424575,
+	1503625,
+	1585275,
+	1669550,
+	1756500,
+	1846150,
+	1938550,
+	2033725,
+	2131725,
+	2232600,
+	2341550,
+	2453600,
+	2568775,
+	2687100,
+	2808625,
+	2933400,
+	3061475,
+	3192875,
+	3327650,
+	3465825,
+	3614525,
+	3766900,
+	3922975,
+	4082800,
+	4246400,
+	4413825,
+	4585125,
+	4760350,
+	4939525,
+	5122700,
+	5338925,
+	5581950,
+	5855050,
+	6161850,
+	6506450,
+	6893400,
+	7327825,
+	7815450,
+	8362650,
+}
+
+var wpexp = [][]int{
+	{
+		0,
+		275,
+		700,
+		1300,
+		2100,
+		3125,
+		4400,
+		5950,
+		7800,
+		9975,
+		12475,
+		15350,
+		18600,
+		22250,
+		26300,
+		30800,
+		35750,
+		41150,
+		47050,
+		53475,
+		60400,
+		68250,
+		76675,
+		85725,
+		95400,
+		105725,
+		116700,
+		128350,
+		140700,
+		153750,
+		167550,
+		182075,
+		197375,
+		213475,
+		230375,
+		248075,
+		266625,
+		286025,
+		306300,
+		327475,
+		349525,
+		373675,
+		398800,
+		424925,
+		452075,
+		480275,
+		509525,
+		539850,
+		571275,
+		603825,
+		637475,
+		674025,
+		711800,
+		750800,
+		791075,
+		832625,
+		875475,
+		919625,
+		965125,
+		1011975,
+		1060200,
+		1112275,
+		1165825,
+		1220875,
+		1277425,
+		1335525,
+		1395175,
+		1456400,
+		1519200,
+		1583600,
+		1649625,
+		1720700,
+		1793525,
+		1868100,
+		1944450,
+		2022600,
+		2102600,
+		2184450,
+		2268150,
+		2353725,
+		2441225,
+		2544500,
+		2660575,
+		2791000,
+		2937500,
+		3102050,
+		3286825,
+		3494225,
+		3727000,
+		3988200,
+	},
+	{
+		0,
+		400,
+		1025,
+		1925,
+		3125,
+		4675,
+		6625,
+		8975,
+		11775,
+		15075,
+		18875,
+		23225,
+		28150,
+		33675,
+		39825,
+		46625,
+		54125,
+		62325,
+		71275,
+		81000,
+		91500,
+		103400,
+		116175,
+		129875,
+		144525,
+		160150,
+		176775,
+		194425,
+		213125,
+		232900,
+		253800,
+		275825,
+		299025,
+		323400,
+		349000,
+		375825,
+		403925,
+		433325,
+		464050,
+		496125,
+		529550,
+		566125,
+		604200,
+		643800,
+		684950,
+		727675,
+		772000,
+		817950,
+		865550,
+		914850,
+		965850,
+		1021225,
+		1078450,
+		1137550,
+		1198575,
+		1261525,
+		1326450,
+		1393350,
+		1462275,
+		1533250,
+		1606300,
+		1685200,
+		1766325,
+		1849725,
+		1935425,
+		2023450,
+		2113825,
+		2206575,
+		2301725,
+		2399300,
+		2499350,
+		2607025,
+		2717350,
+		2830350,
+		2946050,
+		3064475,
+		3185675,
+		3309675,
+		3436500,
+		3566175,
+		3698750,
+		3855225,
+		4031100,
+		4228700,
+		4450675,
+		4699975,
+		4979925,
+		5294175,
+		5646875,
+		6042650,
+	},
+	{
+		0,
+		600,
+		1550,
+		2900,
+		4700,
+		7025,
+		9950,
+		13475,
+		17675,
+		22625,
+		28325,
+		34850,
+		42250,
+		50550,
+		59775,
+		69975,
+		81225,
+		93525,
+		106950,
+		121550,
+		137300,
+		155150,
+		174325,
+		194875,
+		216850,
+		240300,
+		265250,
+		291725,
+		319775,
+		349450,
+		380800,
+		413850,
+		448650,
+		485225,
+		523625,
+		563875,
+		606025,
+		650125,
+		696225,
+		744350,
+		794500,
+		849375,
+		906500,
+		965900,
+		1027625,
+		1091725,
+		1158225,
+		1227150,
+		1298550,
+		1372500,
+		1449000,
+		1532075,
+		1617925,
+		1706575,
+		1798125,
+		1892550,
+		1989950,
+		2090300,
+		2193700,
+		2300175,
+		2409750,
+		2528100,
+		2649800,
+		2774900,
+		2903450,
+		3035500,
+		3171075,
+		3310200,
+		3452925,
+		3599300,
+		3749375,
+		3910900,
+		4076400,
+		4245900,
+		4419450,
+		4597100,
+		4778900,
+		4964900,
+		5155150,
+		5349675,
+		5548550,
+		5783275,
+		6047100,
+		6343500,
+		6676475,
+		7050425,
+		7470350,
+		7941725,
+		8470775,
+		9064450,
+	},
 }
