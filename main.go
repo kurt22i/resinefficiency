@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -140,10 +141,14 @@ type jsondata struct {
 	Config     string `json:"config"`
 	Characters []struct {
 		Name   string `json:"name"`
+		Level  int    `json:"level"`
+		MaxLvl int    `json:"max_level"`
 		Cons   int    `json:"cons"`
 		Weapon struct {
 			Name   string `json:"name"`
 			Refine int    `json:"refine"`
+			Level  int    `json:"level"`
+			MaxLvl int    `json:"max_level"`
 		} `json:"weapon"`
 		Stats   []float64    `json:"stats"`
 		Talents TalentDetail `json:"talents"`
@@ -276,8 +281,61 @@ func runTest(t test, config string) (res result) {
 }
 
 //these 3 test functions below should probably go in a diff file
-func runLevelTest(t test, config string) (c string) {
+func runLevelTest(t test, config string) (c string) { //params for level test: 0: charid 1: new level 2: new max level
+	lines := strings.Split(config, "\n")
+	count := 0
+	curline := -1
+	for count <= t.params[0] {
+		curline++
+		if strings.Contains(lines[curline], "char lvl") {
+			count++
+		}
+	}
 
+	newline := lines[curline][0 : strings.Index(lines[curline], "lvl")+4]
+	newline += strconv.Itoa(t.params[1]) + "/" + strconv.Itoa(t.params[2])
+	newline += lines[curline][strings.Index(lines[curline], " cons"):]
+	lines[curline] = newline
+
+	return strings.Join(lines, "\n")
+}
+
+func runTalentTest(t test, config string) (c string) { //params for talent test: 0: charid 1: talent id (aa/e/q) 2: new level 3: requires ascension (0 or 1) 4: new level (if needed) 5: new max level (if needed)
+	cfg := config
+	if t.params[3] == 1 { //increase the level if upgrading the talent requires ascension
+		cfg = runLevelTest(test{"thisshouldntmatter", []int{t.params[0], t.params[4], t.params[5]}}, config)
+	}
+
+	lines := strings.Split(cfg, "\n")
+	count := 0
+	curline := -1
+	for count <= t.params[0] {
+		curline++
+		if strings.Contains(lines[curline], "char lvl") {
+			count++
+		}
+	}
+
+	//10 makes this really annoying because it's two chars instead of one
+	start := strings.Index(lines[curline], "talent=") + 6
+	end := strings.Index(lines[curline], ",")
+
+	if t.params[1] >= 1 { // upgrading e talent
+		start = end
+		end = start + strings.Index(lines[curline][start+1:], ",") + 1
+	}
+
+	if t.params[1] == 2 { //upgrading q talent
+		start = end
+		end = start + strings.Index(lines[curline][start+1:], ",") + 1
+	}
+
+	newline := lines[curline][:start]
+	newline += strconv.Itoa(t.params[2])
+	newline += lines[curline][end:]
+	lines[curline] = newline
+
+	return strings.Join(lines, "\n")
 }
 
 /*func process(data []pack, latest string, force bool) error {
