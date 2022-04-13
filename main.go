@@ -61,7 +61,7 @@ func run() error {
 
 	//get baseline result
 	baseline := runTest(test{"baseline", []int{0}}, data.Config)
-	printResult(baseline, nil)
+	printResult(baseline, baseline)
 
 	//generate necessary tests
 	tests := getTests(data)
@@ -72,6 +72,14 @@ func run() error {
 	}
 
 	return nil
+}
+
+func printResult(res, base result) {
+	if res.resin == -1 {
+		fmt.Printf("%v:\tDPS: %v\n", res.info, res.DPS)
+		return
+	}
+	fmt.Printf("%v:\tDPS: %v (+%v)\tResin: %v\tDPS/Resin: %v\n", res.info, res.DPS, res.DPS-base.DPS, res.resin, (res.DPS-base.DPS)/res.resin)
 }
 
 func download(path string, url string) error {
@@ -281,7 +289,7 @@ func runTest(t test, config string) (res result) {
 }
 
 func generateResult(t test, sd jsondata) (res2 result) {
-	return result{desc(t, sd), sd.DPS, resin(t)}
+	return result{desc(t, sd), sd.DPS, resin(t, sd)}
 }
 
 func desc(t test, sd jsondata) (dsc string) {
@@ -364,6 +372,24 @@ func resin(t test, sd jsondata) (rsn float64) {
 
 func xptolvl(l1 int, l2 int) (xp float64) {
 	return float64(crexp[l2] - crexp[l1])
+}
+
+var resinrates = []float64{ //1 resin = x of this
+	60000 / 20,                            //mora
+	122500 / PurpleBookXP / 20,            //xp books
+	255 / 4000,                            //bossmats
+	(2.2 + 1.97*3 + 0.23*9) / 20,          //talent books
+	(2.2 + 2.4*3 + 0.64*9 + 0.07*27) / 20, //weapon mats
+	107 / 2000,                            //artifacts
+}
+
+func resinformats(mats materials) (rsn float64) {
+	resin := float64(mats.mora) / resinrates[0]
+	resin += mats.books / resinrates[1]
+	resin += float64(mats.bossmats) / resinrates[2]
+	resin += float64(mats.talentbooks) / resinrates[3]
+	resin += float64(mats.weaponmats) / resinrates[4]
+	return resin
 }
 
 //these 3 test functions below should probably go in a diff file
