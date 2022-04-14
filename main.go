@@ -2,7 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"compress/gzip"
+	"compress/zlib"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -61,6 +64,7 @@ func run() error {
 
 	//get json data from url
 	data := readURL(referencesim)
+	fmt.Printf("%v", data)
 
 	//get baseline result
 	baseline := runTest(test{"baseline", []int{0}}, data.Config)
@@ -275,17 +279,23 @@ const PurpleBookXP = 20000
 var reIter = regexp.MustCompile(`iteration=(\d+)`)
 var reWorkers = regexp.MustCompile(`workers=(\d+)`)
 
+type blah struct {
+	Data string `json:"data"`
+}
+
 func readURL(url string) (data2 jsondata) {
 	spaceClient := http.Client{
 		Timeout: time.Second * 2, // Timeout after 2 seconds
 	}
 
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	urlreal := "https://viewer.gcsim.workers.dev/" + url[strings.LastIndex(url, "/"):]
+
+	req, err := http.NewRequest(http.MethodGet, urlreal, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	//req.Header.Set("User-Agent", "spacecount-tutorial") uh is this part important? i hope not
+	//req.Header.Set("User-Agent", "spacecount-tutorial") // uh is this part important? i hope not
 
 	res, getErr := spaceClient.Do(req)
 	if getErr != nil {
@@ -301,8 +311,28 @@ func readURL(url string) (data2 jsondata) {
 		log.Fatal(readErr)
 	}
 
+	idk := blah{}
 	data := jsondata{}
-	err2 := json.Unmarshal(body, &data)
+	err2 := json.Unmarshal(body, &idk)
+	b64z := idk.Data
+	z, _ := base64.StdEncoding.DecodeString(b64z)
+	r, _ := zlib.NewReader(bytes.NewReader(z))
+	resul, _ := ioutil.ReadAll(r)
+	fmt.Println(string(resul)) // results in "secret"
+
+	reader := bytes.NewReader(resul)
+	gzreader, e1 := gzip.NewReader(reader)
+	if e1 != nil {
+		fmt.Println(e1) // Maybe panic here, depends on your error handling.
+	}
+
+	output, e2 := ioutil.ReadAll(gzreader)
+	if e2 != nil {
+		fmt.Println(e2)
+	}
+
+	err2 = json.Unmarshal(output, &data)
+
 	if err2 != nil {
 		fmt.Println(err2)
 		return
