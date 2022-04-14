@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
-	"compress/zlib"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -64,7 +63,7 @@ func run() error {
 
 	//get json data from url
 	data := readURL(referencesim)
-	fmt.Printf("%v", data)
+	//fmt.Printf("%v", data)
 
 	//get baseline result
 	baseline := runTest(test{"baseline", []int{0}}, data.Config)
@@ -221,7 +220,7 @@ type TalentDetail struct {
 }
 
 type jsondata struct {
-	Config     string `json:"config"`
+	Config     string `json:"config_file"`
 	Characters []struct {
 		Name   string `json:"name"`
 		Level  int    `json:"level"`
@@ -236,8 +235,16 @@ type jsondata struct {
 		Stats   []float64    `json:"stats"`
 		Talents TalentDetail `json:"talents"`
 	} `json:"char_details"`
-	DPS       float64 `json:"dps"`
-	NumTarget int     `json:"target_count"`
+	DPSraw    FloatResult `json:"dps"`
+	NumTarget int         `json:"target_count"`
+	DPS       float64
+}
+
+type FloatResult struct {
+	Min  float64 `json:"min"`
+	Max  float64 `json:"max"`
+	Mean float64 `json:"mean"`
+	SD   float64 `json:"sd"`
 }
 
 type wepjson struct {
@@ -316,25 +323,21 @@ func readURL(url string) (data2 jsondata) {
 	err2 := json.Unmarshal(body, &idk)
 	b64z := idk.Data
 	z, _ := base64.StdEncoding.DecodeString(b64z)
-	r, _ := zlib.NewReader(bytes.NewReader(z))
-	resul, _ := ioutil.ReadAll(r)
-	fmt.Println(string(resul)) // results in "secret"
-
-	reader := bytes.NewReader(resul)
-	gzreader, e1 := gzip.NewReader(reader)
-	if e1 != nil {
-		fmt.Println(e1) // Maybe panic here, depends on your error handling.
-	}
-
-	output, e2 := ioutil.ReadAll(gzreader)
-	if e2 != nil {
-		fmt.Println(e2)
-	}
-
-	err2 = json.Unmarshal(output, &data)
-
+	r, _ := gzip.NewReader(bytes.NewReader(z))
+	resul, err3 := ioutil.ReadAll(r)
 	if err2 != nil {
 		fmt.Println(err2)
+		return
+	}
+	if err3 != nil {
+		fmt.Println(err3)
+		return
+	}
+	err = json.Unmarshal(resul, &data)
+	data.DPS = data.DPSraw.Mean
+
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
@@ -379,6 +382,7 @@ func readURL(url string) (data2 jsondata) {
 func runTest(t test, config string) (res result) {
 	var simdata jsondata
 
+	//fmt.Printf("\n\n%v", config)
 	switch t.typ {
 	case "baseline":
 		simdata = runSim(config)
@@ -417,6 +421,8 @@ func desc(t test, sd jsondata) (dsc string) {
 		if t.params[3] == 1 {
 			ascension = " (requires ascension)"
 		}
+		fmt.Printf("%v", t)
+		fmt.Printf("%v", sd)
 		return sd.Characters[t.params[0]].Name + " " + talent + " to " + strconv.Itoa(t.params[2]) + ascension
 	case "weapon":
 		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
@@ -505,6 +511,7 @@ func runLevelTest(t test, config string) (c string) { //params for level test: 0
 	lines := strings.Split(config, "\n")
 	count := 0
 	curline := -1
+	//fmt.Printf("\n\n%v", config)
 	for count <= t.params[0] {
 		curline++
 		if strings.Contains(lines[curline], "char lvl") {
@@ -537,7 +544,7 @@ func runTalentTest(t test, config string) (c string) { //params for talent test:
 	}
 
 	//10 makes this really annoying because it's two chars instead of one
-	start := strings.Index(lines[curline], "talent=") + 6
+	start := strings.Index(lines[curline], "talent=") + 7
 	end := strings.Index(lines[curline], ",")
 
 	if t.params[1] >= 1 { // upgrading e talent
@@ -719,6 +726,7 @@ func runSim(cfg string) (data2 jsondata) {
 
 	data := jsondata{}
 	err2 := json.Unmarshal(jsn, &data)
+	data.DPS = data.DPSraw.Mean
 	if err2 != nil {
 		fmt.Println(err2)
 		return
