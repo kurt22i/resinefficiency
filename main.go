@@ -53,13 +53,20 @@ func run() error {
 	if true {
 		//download nightly cmd line build
 		//https://github.com/genshinsim/gcsim/releases/download/nightly/gcsim.exe
-		err := download("./gcsim.exe", "https://github.com/genshinsim/gcsim/releases/latest/download/gcsim.exe")
+		err := download("./gcsim.exe", "https://github.com/genshinsim/gcsim/releases/download/nightly/gcsim.exe")
+		//err := download("./gcsim.exe", "https://github.com/genshinsim/gcsim/releases/latest/download/gcsim.exe")
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
 	}
 
-	//weps = readWepData()
+	//make a tmp folder if it doesn't exist
+	if _, err := os.Stat("./tmp"); !os.IsNotExist(err) {
+		fmt.Println("tmp folder already exists, deleting...")
+		// path/to/whatever exists
+		os.RemoveAll("./tmp/")
+	}
+	os.Mkdir("./tmp", 0755)
 
 	//get json data from url
 	data := readURL(referencesim)
@@ -94,13 +101,10 @@ func getTests(data jsondata) (tt []test) {
 		if newmax < 40 {
 			newmax = 40 //could just do this with math.max, but it require floats for some reason
 		}
-		if newmax > 90 {
-			newmax = 90
-		}
 		if newlevel > 90 {
 			newlevel = 90
 		}
-		fmt.Printf("%v", c)
+		//fmt.Printf("%v", c)
 		if c.Level < 90 && c.Level != c.MaxLvl { //levelup test
 			tests = append(tests, test{"level", []int{i, newlevel, c.MaxLvl}})
 		} else if c.Level < 90 { //levelup and ascension test
@@ -185,7 +189,7 @@ func printResult(res, base result) {
 	}
 	dps += " (+" + fmt.Sprintf("%.0f", res.DPS-base.DPS) + ")"
 	resin := "Resin: " + fmt.Sprintf("%.0f", res.resin)
-	dpsresin := "DPS/Resin: " + fmt.Sprintf("%.2f", (res.DPS-base.DPS)/res.resin)
+	dpsresin := "DPS/Resin: " + fmt.Sprintf("%.2f", math.Max((res.DPS-base.DPS)/res.resin, 0.0))
 	fmt.Printf("%-40v%-30v%-30v%-24v\n", info, dps, resin, dpsresin)
 }
 
@@ -440,7 +444,7 @@ func resin(t test, sd jsondata) (rsn float64) {
 	case "baseline":
 		return -1
 	case "level":
-		mats.books += xptolvl(sd.Characters[t.params[0]].Level, t.params[1]) / PurpleBookXP
+		mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[1]-1) / PurpleBookXP
 		mats.mora = int(math.Floor(mats.books / 5.0))
 		if t.params[2] != sd.Characters[t.params[0]].MaxLvl { //if we ascended
 			mats.mora += 20000 * (t.params[2] - 30) / 10
@@ -450,18 +454,18 @@ func resin(t test, sd jsondata) (rsn float64) {
 		mats.mora += talentmora[t.params[2]-2] * 100
 		mats.talentbooks += talentbks[t.params[2]-2]
 		if t.params[3] == 1 {
-			mats.books += xptolvl(sd.Characters[t.params[0]].Level, t.params[1]) / PurpleBookXP
+			mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[4]-1) / PurpleBookXP
 			mats.mora += int(math.Floor(mats.books / 5.0))
-			mats.mora += 20000 * (t.params[2] - 30) / 10
-			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
+			mats.mora += 20000 * (t.params[5] - 30) / 10
+			mats.bossmats += int(math.Floor((float64(t.params[5])-30.0)/10.0*(float64(t.params[5])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[5])-80.0)/5.0)
 		}
 	case "weapon":
-		fmt.Printf("%v", t)
+		//fmt.Printf("%v", t)
 		//fmt.Printf("%v", sd)
-		fmt.Printf("%v", t.params[2]-1)
-		fmt.Printf("%v", sd.Characters[t.params[0]].Weapon.Level-1)
-		fmt.Printf("%v", wpexp[t.params[1]-3][t.params[2]-1])
-		fmt.Printf("%v", wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1])
+		//fmt.Printf("%v", t.params[2]-1)
+		//fmt.Printf("%v", sd.Characters[t.params[0]].Weapon.Level-1)
+		//fmt.Printf("%v", wpexp[t.params[1]-3][t.params[2]-1])
+		//.Printf("%v", wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1])
 		mats.mora += (wpexp[t.params[1]-3][t.params[2]-1] - wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1]) / 10
 		if t.params[3] != sd.Characters[t.params[0]].Weapon.MaxLvl { //if we ascended
 			mats.weaponmats += wpmats[t.params[1]-3][(t.params[3]-30)/10-1]
