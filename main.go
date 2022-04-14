@@ -633,9 +633,45 @@ func subsubs(s1, s2 []float64) []float64 {
 	return sub
 }
 
+var subchance = []int{6, 4, 6, 4, 6, 4, 4, 4, 3, 3}
+var srolls = []float64{0.824, 0.941, 1.059, 1.176}
+
 func randomarti(msc float64) []float64 {
 	setmult := 0.6 //0.5 for right set, 0.1 for wrong set but offpiece
+	arti := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	if rand.Float64() > msc*setmult { //the artifact was unusably offset or had the wrong main stat
+		return arti
+	}
+	count := 0
+	for count < 4 {
+		s := rand.Intn(44)
+		ttl := 0
+		for i := range subchance {
+			ttl += subchance[i]
+			if s < ttl {
+				s = i
+				break
+			}
+		}
+		if arti[s] == 0 {
+			count++
+			arti[s] += srolls[rand.Intn(4)]
+		}
+	}
 
+	upgrades := 0
+	if rand.Float64() < 0.2 {
+		upgrades = -1
+	}
+	for upgrades < 4 {
+		s := rand.Intn(10)
+		if arti[s] != 0 {
+			upgrades++
+			arti[s] += srolls[rand.Intn(4)]
+		}
+	}
+	fmt.Printf("%v", arti)
+	return arti
 }
 
 func getVersion() (string, error) {
