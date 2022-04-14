@@ -66,7 +66,7 @@ func run() error {
 	//fmt.Printf("%v", data)
 
 	//get baseline result
-	baseline := runTest(test{"baseline", []int{0}}, data.Config)
+	baseline := runTest(test{"baseline", []int{0}}, data.Config, data)
 	fmt.Print("\n")
 	printResult(baseline, baseline)
 
@@ -75,7 +75,7 @@ func run() error {
 
 	//run and print the tests (simultaneously, so that users can see data gradually coming in)
 	for _, t := range tests {
-		printResult(runTest(t, data.Config), baseline)
+		printResult(runTest(t, data.Config, data), baseline)
 	}
 
 	return nil
@@ -106,6 +106,7 @@ func getTests(data jsondata) (tt []test) {
 		} else if c.Level < 90 { //levelup and ascension test
 			newmax -= 10
 			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
+			newlevel -= 10
 		}
 		if c.MaxLvl < 90 { //ascension test
 			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
@@ -167,7 +168,11 @@ func rarity(wep string) int {
 		fmt.Println(err)
 	}
 	data := wepjson{}
-	json.Unmarshal(jsn, &data)
+	err = json.Unmarshal(jsn, &data)
+	if err != nil {
+		fmt.Println(err)
+	}
+	data.Rarity, err = strconv.Atoi(data.Raritys)
 	return data.Rarity
 }
 
@@ -175,13 +180,13 @@ func printResult(res, base result) {
 	info := res.info + ":"
 	dps := "DPS: " + fmt.Sprintf("%.0f", res.DPS)
 	if res.resin == -1 {
-		fmt.Printf("%-30v%-30v\n", info, dps)
+		fmt.Printf("%-40v%-30v\n", info, dps)
 		return
 	}
 	dps += " (+" + fmt.Sprintf("%.0f", res.DPS-base.DPS) + ")"
 	resin := "Resin: " + fmt.Sprintf("%.0f", res.resin)
 	dpsresin := "DPS/Resin: " + fmt.Sprintf("%.2f", (res.DPS-base.DPS)/res.resin)
-	fmt.Printf("%-30v%-30v%-30v%-27v\n", info, dps, resin, dpsresin)
+	fmt.Printf("%-40v%-30v%-30v%-24v\n", info, dps, resin, dpsresin)
 }
 
 func download(path string, url string) error {
@@ -275,7 +280,8 @@ type FloatResult struct {
 
 type wepjson struct {
 	//Name   string `json:"name"`
-	Rarity int `json:"rarity"`
+	Raritys string `json:"rarity"`
+	Rarity  int
 }
 
 type result struct {
@@ -360,7 +366,7 @@ func readURL(url string) (data2 jsondata) {
 	return data
 }
 
-func runTest(t test, config string) (res result) {
+func runTest(t test, config string, baseline jsondata) (res result) {
 	var simdata jsondata
 
 	//fmt.Printf("\n\n%v", config)
@@ -378,11 +384,11 @@ func runTest(t test, config string) (res result) {
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
 
-	return generateResult(t, simdata)
+	return generateResult(t, simdata, baseline)
 }
 
-func generateResult(t test, sd jsondata) (res2 result) {
-	return result{desc(t, sd), sd.DPS, resin(t, sd)}
+func generateResult(t test, sd jsondata, base jsondata) (res2 result) {
+	return result{desc(t, sd), sd.DPS, resin(t, base)}
 }
 
 func desc(t test, sd jsondata) (dsc string) {
@@ -424,8 +430,8 @@ type materials struct {
 	artifacts   int     //not used yet
 }
 
-var wpmats = [][]int{{}, {}, {5, 5 * 3, 9 * 3, 5 * 9, 9 * 9, 6 * 27}}
-var wpmora = [][]int{{}, {}, {10, 20, 30, 45, 55, 65}}
+var wpmats = [][]int{{2, 2 * 3, 4 * 3, 2 * 9, 4 * 9, 3 * 27}, {3, 3 * 3, 6 * 3, 3 * 9, 6 * 9, 4 * 27}, {5, 5 * 3, 9 * 3, 5 * 9, 9 * 9, 6 * 27}}
+var wpmora = [][]int{{5, 10, 15, 20, 25, 30}, {5, 15, 20, 30, 35, 45}, {10, 20, 30, 45, 55, 65}}
 
 func resin(t test, sd jsondata) (rsn float64) {
 	mats := materials{0, 0.0, 0, 0, 0, 0}
@@ -450,6 +456,12 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
 		}
 	case "weapon":
+		fmt.Printf("%v", t)
+		//fmt.Printf("%v", sd)
+		fmt.Printf("%v", t.params[2]-1)
+		fmt.Printf("%v", sd.Characters[t.params[0]].Weapon.Level-1)
+		fmt.Printf("%v", wpexp[t.params[1]-3][t.params[2]-1])
+		fmt.Printf("%v", wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1])
 		mats.mora += (wpexp[t.params[1]-3][t.params[2]-1] - wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1]) / 10
 		if t.params[3] != sd.Characters[t.params[0]].Weapon.MaxLvl { //if we ascended
 			mats.weaponmats += wpmats[t.params[1]-3][(t.params[3]-30)/10-1]
