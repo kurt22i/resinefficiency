@@ -91,7 +91,7 @@ func run() error {
 
 	//get json data from url
 	data := readURL(referencesim)
-	//fmt.Printf("%v", data)
+	fmt.Println("running tests...")
 
 	//get baseline result
 	baseline := runTest(test{"baseline", []int{0}}, data.Config, data)
