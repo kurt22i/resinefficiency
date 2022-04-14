@@ -20,18 +20,33 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	//"gopkg.in/alecthomas/kingpin.v2"
 )
 
-var referencesim = "https://gcsim.app/viewer/share/LzLiaQWJBS0rmCeb84vfR" //link to the gcsim that gives rotation, er reqs and optimization priority
+// var (
+// 	verbose = kingpin.Flag("verbose", "Verbose mode.").Short('v').Bool()
+// 	name    = kingpin.Arg("name", "Name of user.").Required().String()
+// )
+//var referencesim = *flag.String("url", "", "your simulation")
+
+var referencesim = "https://gcsim.app/viewer/share/E3_RQMZYffOLGjyJhpZxo" //link to the gcsim that gives rotation, er reqs and optimization priority
 //var chars = make([]Character, 4);
 var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
 var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
 //var domains []string = {"esf"}
-var simspertest = 10000 //iterations to run gcsim at when testing dps gain from upgrades.
-var godatafile = ""     //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
+var simspertest = 100000 //iterations to run gcsim at when testing dps gain from upgrades.
+var godatafile = ""      //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
 //var weps []wepjson
 
 func main() {
+	//kingpin.Version("0.0.1")
+	//kingpin.Parse()
+	//iter := flag.Int("i", 10000, "sim iterations per test")
+	//referencesim = "https://gcsim.app/viewer/share/" + *flag.String("hash", "", "your simulation")
+	//flag.Parse()
+	//referencesim = (*url) ok i give up, no command line params for now
+	//fmt.Printf("url is: %v\n", referencesim)
+	//simspertest = *iter
 	/*var d bool
 	var force bool
 	flag.BoolVar(&d, "d", false, "skip re-download executable?")
@@ -53,11 +68,15 @@ func run() error {
 	if true {
 		//download nightly cmd line build
 		//https://github.com/genshinsim/gcsim/releases/download/nightly/gcsim.exe
-		err := download("./gcsim.exe", "https://github.com/genshinsim/gcsim/releases/download/nightly/gcsim.exe")
-		//err := download("./gcsim.exe", "https://github.com/genshinsim/gcsim/releases/latest/download/gcsim.exe")
+		//err := download("./gcsim.exe", "https://github.com/genshinsim/gcsim/releases/download/nightly/gcsim.exe")
+		err := download("./gcsim.exe", "https://github.com/genshinsim/gcsim/releases/latest/download/gcsim.exe")
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
+	}
+
+	if referencesim == "" {
+		return errors.New("please input your simulation by using url=\"linkhere\"!")
 	}
 
 	//make a tmp folder if it doesn't exist
@@ -90,6 +109,8 @@ func run() error {
 
 func getTests(data jsondata) (tt []test) {
 	tests := make([]test, 0)
+	//tests = append(tests, test{"talent", []int{2, 0, 2, 0, -1, -1}})
+	//return tests
 	for i, c := range data.Characters { //should split this into functions
 
 		//add level tests
@@ -364,7 +385,8 @@ func readURL(url string) (data2 jsondata) {
 	}
 
 	//fix the iterations
-	data.Config = reIter.ReplaceAllString(data.Config, "iteration=10000") //should be using the simspertest variable for this
+	it := "iteration=" + strconv.Itoa(simspertest)
+	data.Config = reIter.ReplaceAllString(data.Config, it)
 	data.Config = reWorkers.ReplaceAllString(data.Config, "workers=30")
 
 	return data
