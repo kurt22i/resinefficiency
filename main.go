@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -22,7 +23,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	//"gopkg.in/alecthomas/kingpin.v2"
 )
 
 // var (
@@ -38,25 +38,16 @@ var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it 
 //var domains []string = {"esf"}
 var simspertest = 100000 //iterations to run gcsim at when testing dps gain from upgrades.
 var godatafile = ""      //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
-//var weps []wepjson
 var halp = false
 
 func main() {
-	//kingpin.Version("0.0.1")
-	//kingpin.Parse()
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
 	flag.BoolVar(&halp, "halp", false, "use gzip instead of zlib")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
-	//referencesim = "https://gcsim.app/viewer/share/" + *flag.String("hash", "", "your simulation")
 	flag.Parse()
-	//referencesim = (*url) ok i give up, no command line params for now
-	//fmt.Printf("url is: %v\n", referencesim)
-	//simspertest = *iter
-	/*var d bool
-	var force bool
-	flag.BoolVar(&d, "d", false, "skip re-download executable?")
-	flag.BoolVar(&force, "f", false, "force rerun all")
-	flag.Parse()*/
+
+	time.Now().UnixNano()
+	rand.Seed(42)
 
 	err := run()
 
@@ -181,6 +172,9 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 		if c.Weapon.MaxLvl < 90 { //ascension test
 			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
 		}
+
+		//add artifact test
+		tests = append(tests, test{"artifact", []int{i}})
 	}
 	return tests
 }
@@ -246,33 +240,6 @@ func download(path string, url string) error {
 	_, err = io.Copy(out, resp.Body)
 	return errors.Wrap(err, "")
 }
-
-/*type pack struct {
-	Author      string `yaml:"author" json:"author"`
-	Config      string `yaml:"config" json:"config"`
-	Description string `yaml:"description" json:"description"`
-	//the following are machine generated fields
-	Hash      string  `yaml:"hash" json:"hash"`
-	Team      []char  `yaml:"team" json:"team"`
-	DPS       float64 `yaml:"dps" json:"dps"`
-	Mode      string  `yaml:"mode" json:"mode"`
-	Duration  float64 `yaml:"duration" json:"duration"`
-	NumTarget int     `yaml:"target_count" json:"target_count"`
-	ViewerKey string  `yaml:"viewer_key" json:"viewer_key"`
-	//unexported stuff
-	gzPath   string
-	filepath string
-	changed  bool
-}*/
-
-/*type char struct {
-	Name    string       `yaml:"name" json:"name"`
-	Con     int          `yaml:"con" json:"con"`
-	Weapon  string       `yaml:"weapon" json:"weapon"`
-	Refine  int          `yaml:"refine" json:"refine"`
-	ER      float64      `yaml:"er" json:"er"`
-	Talents TalentDetail `yaml:"talents" json:"talents"`
-}*/
 
 type TalentDetail struct {
 	Attack int `json:"attack"`
@@ -346,8 +313,6 @@ func readURL(url string) (data2 jsondata) {
 		log.Fatal(err)
 	}
 
-	//req.Header.Set("User-Agent", "spacecount-tutorial") // uh is this part important? i hope not
-
 	res, getErr := spaceClient.Do(req)
 	if getErr != nil {
 		log.Fatal(getErr)
@@ -403,7 +368,6 @@ func readURL(url string) (data2 jsondata) {
 func runTest(t test, config string, baseline jsondata) (res result) {
 	var simdata jsondata
 
-	//fmt.Printf("\n\n%v", config)
 	switch t.typ {
 	case "baseline":
 		simdata = runSim(config)
@@ -413,7 +377,8 @@ func runTest(t test, config string, baseline jsondata) (res result) {
 		simdata = runSim(runTalentTest(t, config))
 	case "weapon":
 		simdata = runSim(runWeaponTest(t, config))
-	//case "artifact" in future... hopefully...
+	case "artifact":
+		simdata = runSim(runArtifactTest(t, config))
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -608,6 +573,69 @@ func runWeaponTest(t test, config string) (c string) { //params for weapon test:
 	lines[curline] = newline
 
 	return strings.Join(lines, "\n")
+}
+
+type subrolls struct {
+	Atk  float64
+	AtkP float64
+	HP   float64
+	HPP  float64
+	Def  float64
+	DefP float64
+	EM   float64
+	ER   float64
+	CR   float64
+	CD   float64
+}
+
+func runArtifactTest(t test, config string) (c string) { //params for artifact test: 0: charid
+	lines := strings.Split(config, "\n")
+	count := 0
+	curline := -1
+	for count <= t.params[0] { //fixthis
+		curline++
+		if strings.Contains(lines[curline], "add stats") {
+			count++
+		}
+	}
+
+	newline := lines[curline][0 : strings.Index(lines[curline], "add stats")+9]
+	newline += simartiupgrades(getrolls(lines[curline])) + ";"
+	lines[curline] = newline
+
+	return strings.Join(lines, "\n")
+}
+
+func simartiupgrades(cursubs []float64, msc float64) string {
+	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i := 0; i < artisims; i++ {
+		avgsubs = addsubs(avgsubs, subsubs(addsubs(randomarti(msc), remove8(cursubs)), cursubs))
+	}
+	for i := range avgsubs {
+		avgsubs[i] /= float64(artisims)
+	}
+	return torolls(addsubs(cursubs, avgsubs))
+}
+
+func addsubs(s1, s2 []float64) []float64 {
+	add := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i := range add {
+		add[i] = s1[i] + s2[i]
+	}
+	return add
+}
+
+func subsubs(s1, s2 []float64) []float64 {
+	sub := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i := range sub {
+		sub[i] = math.Max(0, s1[i]-s2[i])
+	}
+	return sub
+}
+
+func randomarti(msc float64) []float64 {
+	setmult := 0.6 //0.5 for right set, 0.1 for wrong set but offpiece
+
 }
 
 func getVersion() (string, error) {
