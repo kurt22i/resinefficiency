@@ -25,20 +25,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// var (
-// 	verbose = kingpin.Flag("verbose", "Verbose mode.").Short('v').Bool()
-// 	name    = kingpin.Arg("name", "Name of user.").Required().String()
-// )
-//var referencesim = *flag.String("url", "", "your simulation")
-
 var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link to the gcsim that gives rotation, er reqs and optimization priority
 //var chars = make([]Character, 4);
-var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
-var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
+//var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
+//var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
 //var domains []string = {"esf"}
 var simspertest = 100000 //iterations to run gcsim at when testing dps gain from upgrades.
-var godatafile = ""      //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
+//var godatafile = ""      //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
 var halp = false
+var artisims = 1000
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
@@ -276,7 +271,6 @@ type FloatResult struct {
 }
 
 type wepjson struct {
-	//Name   string `json:"name"`
 	Raritys string `json:"rarity"`
 	Rarity  int
 }
@@ -606,6 +600,35 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 	return strings.Join(lines, "\n")
 }
 
+func getrolls(str string) []float64 {
+	rolls := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	str2 := str
+	var err error
+	// for(i:=0;i<10;i++) {
+	// 	rolls[i]=strconv.ParseFloat(str2[strings.Index(str2,"=")+1:strings.Index(str2,"=")+1])
+	// }
+	str2 = strings.Replace(str2, ";", " ", 1)
+	rolls[0], err = strconv.ParseFloat(str2[strings.Index(str2, "atk=")+4:strings.Index(str2[strings.Index(str2, "atk=")+1:], " ")+strings.Index(str2, "atk=")+1], 64)
+	if err != nil {
+		//do nothing, this is just getting rid of "err is not used" warning
+		fmt.Printf("%v", err)
+	}
+	rolls[1], err = strconv.ParseFloat(str2[strings.Index(str2, "atk%=")+5:strings.Index(str2[strings.Index(str2, "atk%=")+1:], " ")+strings.Index(str2, "atk%=")+1], 64)
+	rolls[2], err = strconv.ParseFloat(str2[strings.Index(str2, "hp=")+3:strings.Index(str2[strings.Index(str2, "hp=")+1:], " ")+strings.Index(str2, "hp=")+1], 64)
+	rolls[3], err = strconv.ParseFloat(str2[strings.Index(str2, "hp%=")+4:strings.Index(str2[strings.Index(str2, "hp%=")+1:], " ")+strings.Index(str2, "hp%=")+1], 64)
+	rolls[4], err = strconv.ParseFloat(str2[strings.Index(str2, "def=")+4:strings.Index(str2[strings.Index(str2, "def=")+1:], " ")+strings.Index(str2, "def=")+1], 64)
+	rolls[5], err = strconv.ParseFloat(str2[strings.Index(str2, "def%=")+5:strings.Index(str2[strings.Index(str2, "def%=")+1:], " ")+strings.Index(str2, "def%=")+1], 64)
+	rolls[6], err = strconv.ParseFloat(str2[strings.Index(str2, "em=")+3:strings.Index(str2[strings.Index(str2, "em=")+1:], " ")+strings.Index(str2, "em=")+1], 64)
+	rolls[7], err = strconv.ParseFloat(str2[strings.Index(str2, "er=")+3:strings.Index(str2[strings.Index(str2, "er=")+1:], " ")+strings.Index(str2, "er=")+1], 64)
+	rolls[8], err = strconv.ParseFloat(str2[strings.Index(str2, "cr=")+3:strings.Index(str2[strings.Index(str2, "cr=")+1:], " ")+strings.Index(str2, "cr=")+1], 64)
+	rolls[9], err = strconv.ParseFloat(str2[strings.Index(str2, "cd=")+3:strings.Index(str2[strings.Index(str2, "cd=")+1:], " ")+strings.Index(str2, "cd=")+1], 64)
+
+	for i := range rolls {
+		rolls[i] /= standards[i]
+	}
+	return rolls
+}
+
 func simartiupgrades(cursubs []float64, msc float64) string {
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	for i := 0; i < artisims; i++ {
@@ -615,6 +638,41 @@ func simartiupgrades(cursubs []float64, msc float64) string {
 		avgsubs[i] /= float64(artisims)
 	}
 	return torolls(addsubs(cursubs, avgsubs))
+}
+
+var standards = []float64{16.54, 0.0496, 253.94, 0.0496, 19.68, 0.062, 19.82, 0.0551, 0.0331, 0.0662}
+
+func torolls(subs []float64) string {
+	str := "atk=" + fmt.Sprintf("%f", standards[0]*subs[0])
+	str += " atk%=" + fmt.Sprintf("%f", standards[1]*subs[1])
+	str += " hp=" + fmt.Sprintf("%f", standards[2]*subs[2])
+	str += " hp%=" + fmt.Sprintf("%f", standards[3]*subs[3])
+	str += " def=" + fmt.Sprintf("%f", standards[4]*subs[4])
+	str += " def%=" + fmt.Sprintf("%f", standards[5]*subs[5])
+	str += " em=" + fmt.Sprintf("%f", standards[6]*subs[6])
+	str += " er=" + fmt.Sprintf("%f", standards[7]*subs[7])
+	str += " cr=" + fmt.Sprintf("%f", standards[8]*subs[8])
+	str += " cd=" + fmt.Sprintf("%f", standards[9]*subs[9])
+	return str
+}
+
+func remove8(subs []float64) []float64 {
+	removed := 0
+	//this is ugly and probably not necessary, but i'm pre-empting issues with modifying newsubs also changing cursubs bc pointers idk
+	newsubs := []float64{subs[0], subs[1], subs[2], subs[3], subs[4], subs[5], subs[6], subs[7], subs[8], subs[9]}
+	tries := 0
+	for removed < 8 && tries < 1000 {
+		tries++
+		s := rand.Intn(10)
+		if newsubs[s] > 0.5 {
+			newsubs[s] = math.Max(newsubs[s]-1.0, 0.0)
+			removed++
+		}
+	}
+	if tries >= 1000 {
+		fmt.Printf("halp! start %v, got to %v, can't remove more!", subs, newsubs)
+	}
+	return newsubs
 }
 
 func addsubs(s1, s2 []float64) []float64 {
