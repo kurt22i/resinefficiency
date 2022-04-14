@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
+	"compress/zlib"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -22,14 +22,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-var referencesim = "https://gcsim.app/viewer/share/te_IALQ1HZ_dJmkAeiIcf" //link to the gcsim that gives rotation, er reqs and optimization priority
+var referencesim = "https://gcsim.app/viewer/share/LzLiaQWJBS0rmCeb84vfR" //link to the gcsim that gives rotation, er reqs and optimization priority
 //var chars = make([]Character, 4);
 var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
 var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
 //var domains []string = {"esf"}
 var simspertest = 10000 //iterations to run gcsim at when testing dps gain from upgrades.
 var godatafile = ""     //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
-var weps []wepjson
+//var weps []wepjson
 
 func main() {
 	/*var d bool
@@ -59,7 +59,7 @@ func run() error {
 		}
 	}
 
-	weps = readWepData()
+	//weps = readWepData()
 
 	//get json data from url
 	data := readURL(referencesim)
@@ -100,6 +100,7 @@ func getTests(data jsondata) (tt []test) {
 		if newlevel > 90 {
 			newlevel = 90
 		}
+		fmt.Printf("%v", c)
 		if c.Level < 90 && c.Level != c.MaxLvl { //levelup test
 			tests = append(tests, test{"level", []int{i, newlevel, c.MaxLvl}})
 		} else if c.Level < 90 { //levelup and ascension test
@@ -154,13 +155,20 @@ func getTests(data jsondata) (tt []test) {
 }
 
 func rarity(wep string) int {
-	for _, w := range weps {
-		if w.Name == wep {
-			return w.Rarity
-		}
+	// for _, w := range weps {
+	// 	if w.Name == wep {
+	// 		return w.Rarity
+	// 	}
+	// }
+	//fmt.Printf("weapon not found: %v", wep)
+
+	jsn, err := os.ReadFile("./wep/" + wep + ".json")
+	if err != nil {
+		fmt.Println(err)
 	}
-	fmt.Printf("weapon not found: %v", wep)
-	return -3
+	data := wepjson{}
+	json.Unmarshal(jsn, &data)
+	return data.Rarity
 }
 
 func printResult(res, base result) {
@@ -266,27 +274,9 @@ type FloatResult struct {
 }
 
 type wepjson struct {
-	Name   string `json:"name"`
-	Rarity int    `json:"rarity"`
+	//Name   string `json:"name"`
+	Rarity int `json:"rarity"`
 }
-
-/*type result struct {
-	Duration FloatResult `json:"sim_duration"`
-	DPS      FloatResult `json:"dps"`
-	Targets  []struct {
-		Level int `json:"level"`
-	} `json:"target_details"`
-	Characters []struct {
-		Name   string `json:"name"`
-		Cons   int    `json:"cons"`
-		Weapon struct {
-			Name   string `json:"name"`
-			Refine int    `json:"refine"`
-		} `json:"weapon"`
-		Stats   []float64    `json:"stats"`
-		Talents TalentDetail `json:"talents"`
-	} `json:"char_details"`
-}*/
 
 type result struct {
 	info  string
@@ -338,15 +328,19 @@ func readURL(url string) (data2 jsondata) {
 
 	idk := blah{}
 	data := jsondata{}
-	err2 := json.Unmarshal(body, &idk)
+	err = json.Unmarshal(body, &idk)
 	b64z := idk.Data
-	z, _ := base64.StdEncoding.DecodeString(b64z)
-	r, _ := gzip.NewReader(bytes.NewReader(z))
-	resul, err3 := ioutil.ReadAll(r)
+	z, err4 := base64.StdEncoding.DecodeString(b64z)
+	if err4 != nil {
+		fmt.Println(err4)
+		return
+	}
+	r, err2 := zlib.NewReader(bytes.NewReader(z))
 	if err2 != nil {
 		fmt.Println(err2)
 		return
 	}
+	resul, err3 := ioutil.ReadAll(r)
 	if err3 != nil {
 		fmt.Println(err3)
 		return
@@ -365,37 +359,6 @@ func readURL(url string) (data2 jsondata) {
 
 	return data
 }
-
-/*func loadData(dir string) ([]pack, error) {
-	var data []pack
-
-	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-		//do nothing if is directory
-		if info.IsDir() {
-			return nil
-		}
-		fmt.Printf("\tReading file: %v at %v\n", info.Name(), path)
-		file, err := os.ReadFile(path)
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-		var d pack
-		err = yaml.Unmarshal(file, &d)
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-		d.filepath = path
-
-		data = append(data, d)
-
-		return nil
-	})
-
-	return data, err
-}*/
 
 func runTest(t test, config string) (res result) {
 	var simdata jsondata
@@ -619,6 +582,7 @@ func readWepData() []wepjson {
 	if err != nil {
 		fmt.Print("idk halp")
 	}
+	fmt.Printf("%v", wjss)
 	return wjss
 }
 
