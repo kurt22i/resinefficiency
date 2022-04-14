@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"compress/zlib"
 	"encoding/base64"
 	"encoding/json"
@@ -38,11 +39,13 @@ var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it 
 var simspertest = 100000 //iterations to run gcsim at when testing dps gain from upgrades.
 var godatafile = ""      //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
 //var weps []wepjson
+var halp = false
 
 func main() {
 	//kingpin.Version("0.0.1")
 	//kingpin.Parse()
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
+	flag.BoolVar(&halp, "halp", false, "use gzip instead of zlib")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
 	//referencesim = "https://gcsim.app/viewer/share/" + *flag.String("hash", "", "your simulation")
 	flag.Parse()
@@ -370,8 +373,11 @@ func readURL(url string) (data2 jsondata) {
 	}
 	r, err2 := zlib.NewReader(bytes.NewReader(z))
 	if err2 != nil {
-		fmt.Println(err2)
-		return
+		r, err2 = gzip.NewReader(bytes.NewReader(z))
+		if err != nil {
+			fmt.Println(err2)
+			return
+		}
 	}
 	resul, err3 := ioutil.ReadAll(r)
 	if err3 != nil {
