@@ -6,6 +6,7 @@ import (
 	"compress/zlib"
 	"encoding/base64"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -41,9 +42,10 @@ var godatafile = ""      //filename of the GO data that will be used for weapons
 func main() {
 	//kingpin.Version("0.0.1")
 	//kingpin.Parse()
-	//iter := flag.Int("i", 10000, "sim iterations per test")
+	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
+	flag.StringVar(&referencesim, "url", "", "your simulation")
 	//referencesim = "https://gcsim.app/viewer/share/" + *flag.String("hash", "", "your simulation")
-	//flag.Parse()
+	flag.Parse()
 	//referencesim = (*url) ok i give up, no command line params for now
 	//fmt.Printf("url is: %v\n", referencesim)
 	//simspertest = *iter

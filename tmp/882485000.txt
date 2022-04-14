@@ -1,0 +1,108 @@
+raiden char lvl=90/90 cons=2 talent=1,9,10;
+raiden add weapon="thecatch" refine=1 lvl=90/90;
+raiden add set="emblemofseveredfate" count=4;
+raiden add stats def%=0.1970 def=42.00 hp=4780 atk=358.0 atk%=0.6180 er=0.8940 cr=0.6020 cd=0.9480;
+
+xiangling char lvl=90/90 cons=6 talent=5,8,10;
+xiangling add weapon="dragonsbane" refine=5 lvl=90/90;
+xiangling add set="emblemofseveredfate" count=4;
+xiangling add stats def%=0.1310 def=42.00 hp=4780 hp%=0.05800 atk=381.0 atk%=0.09900 er=0.8160 em=147.0 cr=0.4240 cd=1.033 pyro%=0.4660;
+
+xingqiu char lvl=90/90 cons=6 talent=1,9,10;
+xingqiu add weapon="favoniussword" refine=5 lvl=90/90;
+xingqiu add set="emblemofseveredfate" count=4;
+xingqiu add stats def=86.00 hp=4780 hp%=0.1050 atk=422.0 atk%=0.6590 er=0.06500 cr=0.5630 cd=0.9880 hydro%=0.4660;
+
+bennett char lvl=80/90 cons=6 talent=1,8,10;
+bennett add weapon="thealleyflash" refine=5 lvl=90/90;
+bennett add set="noblesseoblige" count=4;
+bennett add stats def%=0.1900 def=79.00 hp=5348 hp%=0.1400 atk=325.0 atk%=0.05300 er=1.114 em=163.0 cr=0.4430 cd=0.2640 pyro%=0.4660;
+
+options swap_delay=12 debug=true iteration=100 duration=105 workers=30 mode=sl;
+
+##Default Enemy
+target lvl=100 resist=.1;
+energy every interval=480,720 amount=1;
+
+##Actions List
+
+active raiden;
+
+raiden skill;
+
+#------------------------------------------------------
+
+xingqiu skill, burst, attack;
+
+bennett burst, attack, skill;
+
+xiangling attack, burst, attack, skill;
+
+#raiden attack, burst, attack:3, charge, attack:3, charge, attack:3, charge, attack:1, charge;
+raiden attack, burst, attack:5, dash, attack:5, dash, attack:4, skill, attack;
+
+bennett skill, attack;
+
+xiangling attack:3;
+
+#------------------------------------------------------
+
+xingqiu skill, burst, attack;
+
+bennett burst, attack, skill;
+
+xiangling attack, burst, attack, skill;
+
+#raiden attack, burst, attack:3, charge, attack:3, charge, attack:3, charge, attack:1, charge;
+raiden attack, burst, attack:5, dash, attack:5, dash, attack:4, skill, attack;
+
+bennett skill, attack;
+
+xiangling attack:3;
+
+#------------------------------------------------------
+
+xingqiu skill, burst, attack;
+
+bennett burst, attack, skill;
+
+xiangling attack, burst, attack, skill;
+
+#raiden attack, burst, attack:3, charge, attack:3, charge, attack:3, charge, attack:1, charge;
+raiden attack, burst, attack:5, dash, attack:5, dash, attack:4, skill, attack;
+
+bennett skill, attack;
+
+xiangling attack:3;
+
+#------------------------------------------------------
+
+xingqiu skill, burst, attack;
+
+bennett burst, attack, skill;
+
+xiangling attack, burst, attack, skill;
+
+#raiden attack, burst, attack:3, charge, attack:3, charge, attack:3, charge, attack:1, charge;
+raiden attack, burst, attack:5, dash, attack:5, dash, attack:4, skill, attack;
+
+bennett skill, attack;
+
+xiangling attack:3;
+
+#------------------------------------------------------
+
+xingqiu skill, burst, attack;
+
+bennett burst, attack, skill;
+
+xiangling attack, burst, attack, skill;
+
+#raiden attack, burst, attack:3, charge, attack:3, charge, attack:3, charge, attack:1, charge;
+raiden attack, burst, attack:5, dash, attack:5, dash, attack:4, skill, attack;
+
+bennett skill, attack;
+
+xiangling attack:3;
+
+
