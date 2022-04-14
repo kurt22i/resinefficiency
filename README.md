@@ -8,15 +8,13 @@ this tool calculates the most resin efficient upgrades for your team by calculat
 2. In your downloads folder, right click the ZIP, and click Extract All
 3. Navigate inside the "resinefficiency-main" folders
 4. In the address bar (the bar that says something like "Downloads > resinefficiency-main > resinefficiencymain"), type "cmd" and press Enter
-//5. Go to https://gcsim.app/db (if you are already familiar with gcsim, skip to step 7)
-//6. Use the filters to find the team you play, and click "Load in Simulator" (make sure .. nvm. section for ppl unfamiliar with gcsim coming soon
-7. Paste in the following command: go run . -url=linkhere
-8. Replace linkhere with the link to your personal sim
-9. Press Enter and watch the calc! At default iterations of 10000, it should take about 2 minutes.
+5. Paste in the following command: go run . -url=linkhere
+6. Replace linkhere with the link to your personal sim
+7. Press Enter and watch the calc! At default iterations of 10000, it should take about 2 minutes.
 
-Additional options:
--i (int) number of iterations per test
--halp (bool) if you're getting a zlib error try adding this, the error happens when the linked sim was created on desktop rather than web
+Additional options:</br>
+-i (int) number of iterations per test</br>
+-halp (bool) if you're getting a zlib error try adding this, the error happens when the linked sim was created on desktop rather than web</br>
 
 contact Kurt#5846 with questions/suggestions/bugs/etc!
 
