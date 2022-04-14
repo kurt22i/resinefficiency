@@ -20,13 +20,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-var referencesim = "" //link to the gcsim that gives rotation, er reqs and optimization priority
+var referencesim = "https://gcsim.app/viewer/share/te_IALQ1HZ_dJmkAeiIcf" //link to the gcsim that gives rotation, er reqs and optimization priority
 //var chars = make([]Character, 4);
 var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
 var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
 //var domains []string = {"esf"}
 var simspertest = 10000 //iterations to run gcsim at when testing dps gain from upgrades.
 var godatafile = ""     //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
+var weps []wepjson
 
 func main() {
 	/*var d bool
@@ -56,6 +57,8 @@ func run() error {
 		}
 	}
 
+	weps = readWepData()
+
 	//get json data from url
 	data := readURL(referencesim)
 
@@ -72,6 +75,76 @@ func run() error {
 	}
 
 	return nil
+}
+
+func getTests(data jsondata) (tt []test) {
+	tests := make([]test, 0)
+	for i, c := range data.Characters { //should split this into functions
+
+		//add level tests
+		newlevel := (c.Level/10 + 1) * 10
+		if newlevel < 40 && newlevel != 20 {
+			newlevel += 10
+		}
+		newmax := newlevel + 10
+		if newmax < 40 {
+			newmax = 40 //could just do this with math.max, but it require floats for some reason
+		}
+		if c.Level < 90 && c.Level != c.MaxLvl { //levelup test
+			tests = append(tests, test{"level", []int{i, newlevel, c.MaxLvl}})
+		} else if c.Level < 90 { //levelup and ascension test
+			newmax -= 10
+			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
+		}
+		if c.MaxLvl < 90 { //ascension test
+			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
+		}
+
+		//add talent tests
+		talents := []int{c.Talents.Attack, c.Talents.Skill, c.Talents.Burst}
+		for j, t := range talents {
+			if t == 10 {
+				continue
+			}
+			//talent maxlevel reqs: 2 50, 3/4 60, 5/6 70, 7/8 80, 9/10 90
+			lvlneed := 10*t/2 + 50
+			if c.MaxLvl < lvlneed { //talent test that requires ascension
+				tests = append(tests, test{"talent", []int{i, j, t + 1, 1, newmax - 10, newmax}})
+			} else { //talent test without ascension
+				tests = append(tests, test{"talent", []int{i, j, t + 1, 0, -2, -2}})
+			}
+		}
+
+		//add weapon tests
+		newlevel = (c.Weapon.Level/10 + 1) * 10
+		if newlevel < 40 && newlevel != 20 {
+			newlevel += 10
+		}
+		newmax = newlevel + 10
+		if newmax < 40 {
+			newmax = 40 //could just do this with math.max, but it require floats for some reason
+		}
+		if c.Weapon.Level < 90 && c.Weapon.Level != c.Weapon.MaxLvl { //levelup test
+			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, c.Weapon.MaxLvl}})
+		} else if c.Weapon.Level < 90 { //levelup and ascension test
+			newmax -= 10
+			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
+		}
+		if c.Weapon.MaxLvl < 90 { //ascension test
+			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
+		}
+	}
+	return tests
+}
+
+func rarity(wep string) int {
+	for _, w := range weps {
+		if w.Name == wep {
+			return w.Rarity
+		}
+	}
+	fmt.Printf("weapon not found: %v", wep)
+	return -3
 }
 
 func printResult(res, base result) {
@@ -161,6 +234,11 @@ type jsondata struct {
 	} `json:"char_details"`
 	DPS       float64 `json:"dps"`
 	NumTarget int     `json:"target_count"`
+}
+
+type wepjson struct {
+	Name   string `json:"name"`
+	Rarity int    `json:"rarity"`
 }
 
 /*type result struct {
@@ -579,6 +657,18 @@ func getVersion() (string, error) {
 		return "", err
 	}
 	return hash, nil
+}
+
+func readWepData() []wepjson {
+	jsn, err := os.ReadFile("weps.json")
+	wjss := make([]wepjson, 0)
+	json.Unmarshal(jsn, &wjss)
+	//wjs := wepjson{}
+
+	if err != nil {
+		fmt.Print("idk halp")
+	}
+	return wjss
 }
 
 func runSim(cfg string) (data2 jsondata) {
