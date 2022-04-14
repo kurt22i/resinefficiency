@@ -34,6 +34,7 @@ var simspertest = 100000 //iterations to run gcsim at when testing dps gain from
 //var godatafile = ""      //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
 var halp = false
 var artisims = 1000
+var artisfarmed = 100
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
@@ -404,7 +405,8 @@ func desc(t test, sd jsondata) (dsc string) {
 		return sd.Characters[t.params[0]].Name + " " + talent + " to " + strconv.Itoa(t.params[2]) + ascension
 	case "weapon":
 		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
-	//case "artifact" in future... hopefully...
+	case "artifact":
+		return sd.Characters[t.params[0]].Name + " artifacts"
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -462,7 +464,8 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.weaponmats += wpmats[t.params[1]-3][(t.params[3]-30)/10-1]
 			mats.mora += wpmora[t.params[1]-3][(t.params[3]-30)/10-1]
 		}
-	//case "artifact" in future... hopefully...
+	case "artifact":
+		mats.artifacts += artisfarmed
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -489,6 +492,7 @@ func resinformats(mats materials) (rsn float64) {
 	resin += float64(mats.bossmats) / resinrates[2]
 	resin += float64(mats.talentbooks) / resinrates[3]
 	resin += float64(mats.weaponmats) / resinrates[4]
+	resin += float64(mats.artifacts) / resinrates[5]
 	return resin
 }
 
@@ -594,10 +598,56 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 	}
 
 	newline := lines[curline][0 : strings.Index(lines[curline], "add stats")+9]
-	newline += simartiupgrades(getrolls(lines[curline])) + ";"
+	newline += simartiupgrades(getrolls(lines[curline]), getmsc(lines[curline-1])) + ";"
 	lines[curline] = newline
 
 	return strings.Join(lines, "\n")
+}
+
+func getmsc(str string) float64 {
+	msc := 0.0
+	str2 := str[strings.Index(str, "atk=")+7:]
+	count := 0
+	if strings.Count(str2, "atk%=") == 1 { //atk% sands
+		msc += 0.2667 / 5.0
+		count++
+	} else if strings.Count(str2, "atk%=") == 3 { //shenhe 3x atk
+		//msc+=0.2667*3.0/5.0 wait this doesnt work
+		fmt.Printf("do 3x atk")
+		count = 3
+	}
+
+	if strings.Count(str2, "cr=") == 1 || strings.Count(str2, "cd=") == 1 { //crit circlets. assume either work. ayaka exception at some point needed too.
+		msc += 0.2 / 5.0
+		count++
+	}
+
+	if strings.Count(str2, "hp%=") == 1 { //hp% sands
+		msc += 0.2667 / 5.0
+		count++
+	} else if strings.Count(str2, "hp%=") == 2 { //hp% sands and gob
+		msc += 0.2667/5.0 + 0.2125/5.0
+		count += 2
+	} else if strings.Count(str2, "hp%=") == 2 { //3x hp%
+		msc += 0.2667/5.0 + 0.2125/5.0 + 0.22/5.0
+		count += 3
+	}
+
+	if strings.Count(str2, "heal=") == 1 { //heal circlet
+		msc += 0.1 / 5.0
+		count++
+	}
+
+	if strings.Count(str2, "em=") == 1 && count == 0 { //em. for now assume single em is condensed triple em lol.. rly gotta do this function properly at some point
+		msc += 0.1/5.0 + 0.025/5.0 + 0.04/5.0
+		count = 3
+	}
+
+	if count < 3 { //if count still not 3 assume dmg goblet
+		msc += 0.05 / 5.0
+	}
+
+	return msc + 0.4
 }
 
 func getrolls(str string) []float64 {
@@ -610,7 +660,6 @@ func getrolls(str string) []float64 {
 	str2 = strings.Replace(str2, ";", " ", 1)
 	rolls[0], err = strconv.ParseFloat(str2[strings.Index(str2, "atk=")+4:strings.Index(str2[strings.Index(str2, "atk=")+1:], " ")+strings.Index(str2, "atk=")+1], 64)
 	if err != nil {
-		//do nothing, this is just getting rid of "err is not used" warning
 		fmt.Printf("%v", err)
 	}
 	rolls[1], err = strconv.ParseFloat(str2[strings.Index(str2, "atk%=")+5:strings.Index(str2[strings.Index(str2, "atk%=")+1:], " ")+strings.Index(str2, "atk%=")+1], 64)
@@ -637,7 +686,7 @@ func simartiupgrades(cursubs []float64, msc float64) string {
 	for i := range avgsubs {
 		avgsubs[i] /= float64(artisims)
 	}
-	return torolls(addsubs(cursubs, avgsubs))
+	return torolls(addsubs(cursubs, multsubs(avgsubs, float64(artisfarmed))))
 }
 
 var standards = []float64{16.54, 0.0496, 253.94, 0.0496, 19.68, 0.062, 19.82, 0.0551, 0.0331, 0.0662}
@@ -687,6 +736,14 @@ func subsubs(s1, s2 []float64) []float64 {
 	sub := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	for i := range sub {
 		sub[i] = math.Max(0, s1[i]-s2[i])
+	}
+	return sub
+}
+
+func multsubs(s []float64, mult float64) []float64 {
+	sub := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i := range sub {
+		sub[i] = s[i] * mult
 	}
 	return sub
 }
@@ -743,7 +800,7 @@ func getVersion() (string, error) {
 	return hash, nil
 }
 
-func readWepData() []wepjson {
+/*func readWepData() []wepjson {
 	jsn, err := os.ReadFile("weps.json")
 	wjss := make([]wepjson, 0)
 	json.Unmarshal(jsn, &wjss)
@@ -754,7 +811,7 @@ func readWepData() []wepjson {
 	}
 	fmt.Printf("%v", wjss)
 	return wjss
-}
+}*/
 
 func runSim(cfg string) (data2 jsondata) {
 	path := fmt.Sprintf("./tmp/%v", time.Now().Nanosecond())
