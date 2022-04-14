@@ -67,6 +67,7 @@ func run() error {
 
 	//get baseline result
 	baseline := runTest(test{"baseline", []int{0}}, data.Config)
+	fmt.Print("\n")
 	printResult(baseline, baseline)
 
 	//generate necessary tests
@@ -93,6 +94,12 @@ func getTests(data jsondata) (tt []test) {
 		if newmax < 40 {
 			newmax = 40 //could just do this with math.max, but it require floats for some reason
 		}
+		if newmax > 90 {
+			newmax = 90
+		}
+		if newlevel > 90 {
+			newlevel = 90
+		}
 		if c.Level < 90 && c.Level != c.MaxLvl { //levelup test
 			tests = append(tests, test{"level", []int{i, newlevel, c.MaxLvl}})
 		} else if c.Level < 90 { //levelup and ascension test
@@ -110,7 +117,7 @@ func getTests(data jsondata) (tt []test) {
 				continue
 			}
 			//talent maxlevel reqs: 2 50, 3/4 60, 5/6 70, 7/8 80, 9/10 90
-			lvlneed := 10*t/2 + 50
+			lvlneed := 10*(t/2) + 50
 			if c.MaxLvl < lvlneed { //talent test that requires ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 1, newmax - 10, newmax}})
 			} else { //talent test without ascension
@@ -126,6 +133,12 @@ func getTests(data jsondata) (tt []test) {
 		newmax = newlevel + 10
 		if newmax < 40 {
 			newmax = 40 //could just do this with math.max, but it require floats for some reason
+		}
+		if newmax > 90 {
+			newmax = 90
+		}
+		if newlevel > 90 {
+			newlevel = 90
 		}
 		if c.Weapon.Level < 90 && c.Weapon.Level != c.Weapon.MaxLvl { //levelup test
 			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, c.Weapon.MaxLvl}})
@@ -151,11 +164,16 @@ func rarity(wep string) int {
 }
 
 func printResult(res, base result) {
+	info := res.info + ":"
+	dps := "DPS: " + fmt.Sprintf("%.0f", res.DPS)
 	if res.resin == -1 {
-		fmt.Printf("%v:\tDPS: %v\n", res.info, res.DPS)
+		fmt.Printf("%-30v%-30v\n", info, dps)
 		return
 	}
-	fmt.Printf("%v:\tDPS: %v (+%v)\tResin: %v\tDPS/Resin: %v\n", res.info, res.DPS, res.DPS-base.DPS, res.resin, (res.DPS-base.DPS)/res.resin)
+	dps += " (+" + fmt.Sprintf("%.0f", res.DPS-base.DPS) + ")"
+	resin := "Resin: " + fmt.Sprintf("%.0f", res.resin)
+	dpsresin := "DPS/Resin: " + fmt.Sprintf("%.2f", (res.DPS-base.DPS)/res.resin)
+	fmt.Printf("%-30v%-30v%-30v%-27v\n", info, dps, resin, dpsresin)
 }
 
 func download(path string, url string) error {
@@ -421,8 +439,6 @@ func desc(t test, sd jsondata) (dsc string) {
 		if t.params[3] == 1 {
 			ascension = " (requires ascension)"
 		}
-		fmt.Printf("%v", t)
-		fmt.Printf("%v", sd)
 		return sd.Characters[t.params[0]].Name + " " + talent + " to " + strconv.Itoa(t.params[2]) + ascension
 	case "weapon":
 		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
@@ -489,12 +505,12 @@ func xptolvl(l1 int, l2 int) (xp float64) {
 }
 
 var resinrates = []float64{ //1 resin = x of this
-	60000 / 20,                            //mora
-	122500 / PurpleBookXP / 20,            //xp books
-	255 / 4000,                            //bossmats
-	(2.2 + 1.97*3 + 0.23*9) / 20,          //talent books
-	(2.2 + 2.4*3 + 0.64*9 + 0.07*27) / 20, //weapon mats
-	107 / 2000,                            //artifacts
+	60000 / 20,                                    //mora
+	122500.0 / PurpleBookXP / 20.0,                //xp books
+	255.0 / 4000.0,                                //bossmats
+	(2.2 + 1.97*3.0 + 0.23*9.0) / 20.0,            //talent books
+	(2.2 + 2.4*3.0 + 0.64*9.0 + 0.07*27.0) / 20.0, //weapon mats
+	107.0 / 2000.0,                                //artifacts
 }
 
 func resinformats(mats materials) (rsn float64) {
@@ -544,7 +560,7 @@ func runTalentTest(t test, config string) (c string) { //params for talent test:
 	}
 
 	//10 makes this really annoying because it's two chars instead of one
-	start := strings.Index(lines[curline], "talent=") + 7
+	start := strings.Index(lines[curline], "talent=") + 6
 	end := strings.Index(lines[curline], ",")
 
 	if t.params[1] >= 1 { // upgrading e talent
@@ -554,10 +570,10 @@ func runTalentTest(t test, config string) (c string) { //params for talent test:
 
 	if t.params[1] == 2 { //upgrading q talent
 		start = end
-		end = start + strings.Index(lines[curline][start+1:], ",") + 1
+		end = strings.Index(lines[curline], ";")
 	}
 
-	newline := lines[curline][:start]
+	newline := lines[curline][:start+1]
 	newline += strconv.Itoa(t.params[2])
 	newline += lines[curline][end:]
 	lines[curline] = newline
@@ -581,108 +597,6 @@ func runWeaponTest(t test, config string) (c string) { //params for weapon test:
 	lines[curline] = newline
 
 	return strings.Join(lines, "\n")
-}
-
-/*func process(data []pack, latest string, force bool) error {
-	//make a tmp folder if it doesn't exist
-	if _, err := os.Stat("./tmp"); !os.IsNotExist(err) {
-		fmt.Println("tmp folder already exists, deleting...")
-		// path/to/whatever exists
-		os.RemoveAll("./tmp/")
-	}
-	os.Mkdir("./tmp", 0755)
-
-	fmt.Println("Rerunning configs...")
-
-	for i := range data {
-		//compare hash vs current hash; if not the same rerun
-		if !force && data[i].Hash == latest {
-			fmt.Printf("\tSkipping %v\n", data[i].filepath)
-			continue
-		}
-		data[i].changed = true
-		//re run sim
-		fmt.Printf("\tRerunning %v\n", data[i].filepath)
-		outPath := fmt.Sprintf("./tmp/%v", time.Now().Nanosecond())
-		err := runSim(data[i].Config, outPath)
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-		//read the json and populate
-		data[i].Hash = latest
-		jsonData, err := os.ReadFile(outPath + ".json")
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-		readResultJSON(jsonData, &data[i])
-
-		//find the mode
-		match := reMode.FindStringSubmatch(data[i].Config)
-		if match != nil {
-			data[i].Mode = match[1]
-		}
-
-		//overwrite yaml
-		out, err := yaml.Marshal(data[i])
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-		os.Remove(data[i].filepath)
-		err = os.WriteFile(data[i].filepath, out, 0755)
-		if err != nil {
-			return errors.Wrap(err, "")
-		}
-
-		//write gz
-		writeJSONtoGZ(jsonData, outPath)
-
-		data[i].gzPath = outPath + ".gz"
-	}
-
-	return nil
-}*/
-
-/*func readResultJSON(jsonData []byte, p *pack) error {
-
-	var r result
-	err := json.Unmarshal(jsonData, &r)
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-
-	p.DPS = r.DPS.Mean
-	p.Duration = r.Duration.Mean
-	p.NumTarget = len(r.Targets)
-
-	p.Team = make([]char, 0, len(r.Characters))
-
-	//team info
-	for _, v := range r.Characters {
-		var c char
-		c.Name = v.Name
-		c.Con = v.Cons
-		c.Weapon = v.Weapon.Name
-		c.Refine = v.Weapon.Refine
-		c.Talents = v.Talents
-
-		//grab er stats
-		c.ER = v.Stats[ERIndex]
-
-		p.Team = append(p.Team, c)
-	}
-	return nil
-}*/
-
-func writeJSONtoGZ(jsonData []byte, fpath string) error {
-	f, err := os.OpenFile(fpath+".gz", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-	defer f.Close()
-	zw := gzip.NewWriter(f)
-	zw.Write(jsonData)
-	err = zw.Close()
-	return errors.Wrap(err, "")
 }
 
 func getVersion() (string, error) {
