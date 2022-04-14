@@ -29,7 +29,7 @@ import (
 // )
 //var referencesim = *flag.String("url", "", "your simulation")
 
-var referencesim = "https://gcsim.app/viewer/share/E3_RQMZYffOLGjyJhpZxo" //link to the gcsim that gives rotation, er reqs and optimization priority
+var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link to the gcsim that gives rotation, er reqs and optimization priority
 //var chars = make([]Character, 4);
 var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
 var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
@@ -107,10 +107,8 @@ func run() error {
 	return nil
 }
 
-func getTests(data jsondata) (tt []test) {
+func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talents that are not used in the config
 	tests := make([]test, 0)
-	//tests = append(tests, test{"talent", []int{2, 0, 2, 0, -1, -1}})
-	//return tests
 	for i, c := range data.Characters { //should split this into functions
 
 		//add level tests
@@ -147,6 +145,8 @@ func getTests(data jsondata) (tt []test) {
 			lvlneed := 10*(t/2) + 50
 			if c.MaxLvl < lvlneed { //talent test that requires ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 1, newmax - 10, newmax}})
+			} else if c.MaxLvl >= 70 && t < 6 { //new: upgrade talents below 6 to 6 if possible, because 1->2 is too small to accurately say anything
+				tests = append(tests, test{"talent", []int{i, j, 6, 0, -2, -2}})
 			} else { //talent test without ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 0, -2, -2}})
 			}
@@ -473,21 +473,23 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
 		}
 	case "talent":
-		mats.mora += talentmora[t.params[2]-2] * 100
-		mats.talentbooks += talentbks[t.params[2]-2]
-		if t.params[3] == 1 {
-			mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[4]-1) / PurpleBookXP
-			mats.mora += int(math.Floor(mats.books / 5.0))
-			mats.mora += 20000 * (t.params[5] - 30) / 10
-			mats.bossmats += int(math.Floor((float64(t.params[5])-30.0)/10.0*(float64(t.params[5])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[5])-80.0)/5.0)
+		if t.params[2] == 6 { //this whole function is ugly, but this part especially. functionality first tho
+			talents := []int{sd.Characters[t.params[0]].Talents.Attack, sd.Characters[t.params[0]].Talents.Skill, sd.Characters[t.params[0]].Talents.Burst}
+			for i := talents[t.params[1]] + 1; i <= 6; i++ {
+				mats.mora += talentmora[i-2] * 100
+				mats.talentbooks += talentbks[i-2]
+			}
+		} else {
+			mats.mora += talentmora[t.params[2]-2] * 100
+			mats.talentbooks += talentbks[t.params[2]-2]
+			if t.params[3] == 1 {
+				mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[4]-1) / PurpleBookXP
+				mats.mora += int(math.Floor(mats.books / 5.0))
+				mats.mora += 20000 * (t.params[5] - 30) / 10
+				mats.bossmats += int(math.Floor((float64(t.params[5])-30.0)/10.0*(float64(t.params[5])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[5])-80.0)/5.0)
+			}
 		}
 	case "weapon":
-		//fmt.Printf("%v", t)
-		//fmt.Printf("%v", sd)
-		//fmt.Printf("%v", t.params[2]-1)
-		//fmt.Printf("%v", sd.Characters[t.params[0]].Weapon.Level-1)
-		//fmt.Printf("%v", wpexp[t.params[1]-3][t.params[2]-1])
-		//.Printf("%v", wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1])
 		mats.mora += (wpexp[t.params[1]-3][t.params[2]-1] - wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1]) / 10
 		if t.params[3] != sd.Characters[t.params[0]].Weapon.MaxLvl { //if we ascended
 			mats.weaponmats += wpmats[t.params[1]-3][(t.params[3]-30)/10-1]
