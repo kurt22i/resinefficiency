@@ -590,14 +590,14 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 	lines := strings.Split(config, "\n")
 	count := 0
 	curline := -1
-	for count <= t.params[0] { //fixthis
+	for count <= t.params[0]*2+1 {
 		curline++
 		if strings.Contains(lines[curline], "add stats") {
 			count++
 		}
 	}
 
-	newline := lines[curline][0 : strings.Index(lines[curline], "add stats")+9]
+	newline := lines[curline][0:strings.Index(lines[curline], "add stats")+9] + " "
 	newline += simartiupgrades(getrolls(lines[curline]), getmsc(lines[curline-1])) + ";"
 	lines[curline] = newline
 
@@ -619,6 +619,11 @@ func getmsc(str string) float64 {
 
 	if strings.Count(str2, "cr=") == 1 || strings.Count(str2, "cd=") == 1 { //crit circlets. assume either work. ayaka exception at some point needed too.
 		msc += 0.2 / 5.0
+		count++
+	}
+
+	if strings.Count(str2, "er=") == 1 { //hp% sands
+		msc += 0.1 / 5.0
 		count++
 	}
 
@@ -686,7 +691,7 @@ func simartiupgrades(cursubs []float64, msc float64) string {
 	for i := range avgsubs {
 		avgsubs[i] /= float64(artisims)
 	}
-	return torolls(addsubs(cursubs, multsubs(avgsubs, float64(artisfarmed))))
+	return torolls(addsubs(cursubs, multsubs(avgsubs, math.Log(float64(artisfarmed)))))
 }
 
 var standards = []float64{16.54, 0.0496, 253.94, 0.0496, 19.68, 0.062, 19.82, 0.0551, 0.0331, 0.0662}
@@ -708,12 +713,12 @@ func torolls(subs []float64) string {
 func remove8(subs []float64) []float64 {
 	removed := 0
 	//this is ugly and probably not necessary, but i'm pre-empting issues with modifying newsubs also changing cursubs bc pointers idk
-	newsubs := []float64{subs[0], subs[1], subs[2], subs[3], subs[4], subs[5], subs[6], subs[7], subs[8], subs[9]}
+	newsubs := []float64{subs[0], subs[1], subs[2], subs[3], subs[4], subs[5], subs[6], 0, subs[8], subs[9]}
 	tries := 0
 	for removed < 8 && tries < 1000 {
 		tries++
 		s := rand.Intn(10)
-		if newsubs[s] > 0.5 {
+		if newsubs[s] > 0.5 && s != 7 {
 			newsubs[s] = math.Max(newsubs[s]-1.0, 0.0)
 			removed++
 		}
@@ -721,6 +726,8 @@ func remove8(subs []float64) []float64 {
 	if tries >= 1000 {
 		fmt.Printf("halp! start %v, got to %v, can't remove more!", subs, newsubs)
 	}
+
+	newsubs[7] = subs[7]
 	return newsubs
 }
 
@@ -785,7 +792,9 @@ func randomarti(msc float64) []float64 {
 			arti[s] += srolls[rand.Intn(4)]
 		}
 	}
-	fmt.Printf("%v", arti)
+
+	arti[7] = 0 //no er allowed
+
 	return arti
 }
 
@@ -799,19 +808,6 @@ func getVersion() (string, error) {
 	}
 	return hash, nil
 }
-
-/*func readWepData() []wepjson {
-	jsn, err := os.ReadFile("weps.json")
-	wjss := make([]wepjson, 0)
-	json.Unmarshal(jsn, &wjss)
-	//wjs := wepjson{}
-
-	if err != nil {
-		fmt.Print("idk halp")
-	}
-	fmt.Printf("%v", wjss)
-	return wjss
-}*/
 
 func runSim(cfg string) (data2 jsondata) {
 	path := fmt.Sprintf("./tmp/%v", time.Now().Nanosecond())
