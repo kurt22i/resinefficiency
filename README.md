@@ -1,6 +1,6 @@
 # resinefficiency
  
-this tool calculates the most resin efficient upgrades for your team by calculating the DPS increase/resin cost of each upgrade. It's currently in pre-pre-alpha so there might be bugs (it will probably stay like this for quite a while, as I really don't have the coding knowledge to expand it much farther. if you have ideas or want to clean up my messy code, PRs are welcome)
+this tool calculates the most resin efficient upgrades for your team by calculating the DPS increase/resin cost of each upgrade. It's currently in pre-pre-alpha so there might be bugs (it will probably stay like this for quite a while, as I really don't have the coding knowledge to expand it much farther. PRs welcome though if you have ideas or just want to clean up my messy code)
 
 # How to Use
 
