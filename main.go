@@ -334,7 +334,7 @@ func readURL(url string) (data2 jsondata) {
 	r, err2 := zlib.NewReader(bytes.NewReader(z))
 	if err2 != nil {
 		r, err2 = gzip.NewReader(bytes.NewReader(z))
-		if err != nil {
+		if err2 != nil {
 			fmt.Println(err2)
 			return
 		}
@@ -604,7 +604,7 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 	return strings.Join(lines, "\n")
 }
 
-func getmsc(str string) float64 {
+func getmsc(str string) float64 { //msc=mainstatchance
 	msc := 0.0
 	str2 := str[strings.Index(str, "atk=")+7:]
 	count := 0
@@ -686,12 +686,112 @@ func getrolls(str string) []float64 {
 func simartiupgrades(cursubs []float64, msc float64) string {
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	for i := 0; i < artisims; i++ {
-		avgsubs = addsubs(avgsubs, subsubs(addsubs(randomarti(msc), remove8(cursubs)), cursubs))
+		avgsubs = addsubs(avgsubs, subsubs(farmartis(), cursubs))
 	}
 	for i := range avgsubs {
 		avgsubs[i] /= float64(artisims)
 	}
-	return torolls(addsubs(cursubs, multsubs(avgsubs, math.Log(float64(artisfarmed)))))
+	return torolls(addsubs(cursubs, avgsubs))
+}
+
+func farmartis() []float64 {
+	//let nodes = [...valueFilter.map(x => x.value), optimizationTargetNode], arts = split!
+    const origCount = totBuildNumber
+	const minimum = [...valueFilter.map(x => x.minimum), -Infinity]
+    if (plotBase) {
+      nodes.push(input.total[plotBase])
+      minimum.push(-Infinity)
+    }
+
+    nodes = optimize(nodes, workerData, ({ path: [p] }) => p !== "dyn");
+    ({ nodes, arts } = pruneAll(nodes, minimum, arts, maxBuildsToShow,
+      new Set(setFilters.map(x => x.key as ArtifactSetKey)), {
+      reaffine: true, pruneArtRange: true, pruneNodeRange: true, pruneOrder: true
+    }))
+
+    const plotBaseNode = plotBase ? nodes.pop() : undefined
+    optimizationTargetNode = nodes.pop()!
+
+    let wrap = {
+      buildCount: 0, failedCount: 0, skippedCount: origCount,
+      buildValues: Array(maxBuildsToShow).fill(0).map(_ => -Infinity)
+    }
+    setPerms.forEach(filter => wrap.skippedCount -= countBuilds(filterArts(arts, filter)))
+
+    const setPerm = splitFiltersBySet(arts, setPerms,
+      maxWorkers === 1
+        // Don't split for single worker
+        ? Infinity
+        // 8 perms / worker, up to 1M builds / perm
+        : Math.min(origCount / maxWorkers / 4, 1_000_000))[Symbol.iterator]()
+
+    function fetchWork(): Request | undefined {
+      const { done, value } = setPerm.next()
+      return done ? undefined : {
+        command: "request",
+        threshold: wrap.buildValues[maxBuildsToShow - 1], filter: value,
+      }
+    }
+
+    const filters = nodes
+      .map((value, i) => ({ value, min: minimum[i] }))
+      .filter(x => x.min > -Infinity)
+
+    const finalizedList: Promise<FinalizeResult>[] = []
+    for (let i = 0; i < maxWorkers; i++) {
+      const worker = new Worker()
+
+      const setup: Setup = {
+        command: "setup",
+        id: `${i}`,
+        arts,
+        optimizationTarget: optimizationTargetNode,
+        plotBase: plotBaseNode,
+        maxBuilds: maxBuildsToShow,
+        filters
+      }
+      worker.postMessage(setup, undefined)
+      let finalize: (_: FinalizeResult) => void
+      const finalized = new Promise<FinalizeResult>(r => finalize = r)
+      worker.onmessage = async ({ data }: { data: WorkerResult }) => {
+        switch (data.command) {
+          case "interim":
+            wrap.buildCount += data.buildCount
+            wrap.failedCount += data.failedCount
+            wrap.skippedCount += data.skippedCount
+            if (data.buildValues) {
+              wrap.buildValues.push(...data.buildValues)
+              wrap.buildValues.sort((a, b) => b - a).splice(maxBuildsToShow)
+            }
+            break
+          case "request":
+            const work = fetchWork()
+            if (work) {
+              worker.postMessage(work)
+            } else {
+              const finalizeCommand: Finalize = { command: "finalize" }
+              worker.postMessage(finalizeCommand)
+            }
+            break
+          case "finalize":
+            worker.terminate()
+            finalize(data);
+            break
+          default: console.log("DEBUG", data)
+        }
+      }
+
+      cancelled.then(() => worker.terminate())
+      finalizedList.push(finalized)
+    }
+
+    const buildTimer = setInterval(() => {
+      setgenerationProgress(wrap.buildCount)
+      setgenerationSkipped(wrap.skippedCount)
+      setgenerationDuration(performance.now() - t1)
+    }, 100)
+    const results = await Promise.any([Promise.all(finalizedList), cancelled])
+
 }
 
 var standards = []float64{16.54, 0.0496, 253.94, 0.0496, 19.68, 0.062, 19.82, 0.0551, 0.0331, 0.0662}
