@@ -598,6 +598,7 @@ type subrolls struct {
 	CD   float64
 }
 
+func runArtifactTest(t test, config string, baseline jsondata) (c string) { //params for artifact test: 0: domainid
 	lines := strings.Split(config, "\n")
 	count := 0
 	curline := -1
