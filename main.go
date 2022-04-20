@@ -702,11 +702,41 @@ func simartiupgrades(cursubs []float64, msc float64) string {
 
 func farmartis(int domain) []float64 {
 	newgood := good
-	artistartpos = strings.Index(good,"artifacts\"") + 11
+	artistartpos = strings.Index(good, "artifacts\"") + 11
 	newartis := ""
-	for i:=artifarmtime {
+	for i := 0; i < artifarmtime; i++ {
 		newartis += randomGOarti(domain)
 	}
+
+}
+
+func randomGOarti(domain int) string {
+	arti := "{\"setKey\":\""
+	arti += artinames[domain+rand.Intn(2)]
+	arti += "\",\"rarity\":5,\"level\":0,\"slotKey\":\""
+	artistats := randomarti()
+	arti += slotKey[artistats[11]]
+	arti += "\",\"mainStatKey\":\""
+	arti += statKey[artistats[10]]
+	arti += "\",\"substats\":["
+	curpos := 0
+	found := 0
+	for found < 4 {
+		if artistats[curpos] > 0 {
+			arti += "{\"key\":\""
+			arti += statKey[curpos]
+			arti += "\",\"value\":"
+			arti += fmt.Sprintf("%.1f", artistats[curpos])
+			arti += "}"
+			if found < 3 {
+				arti += ","
+			}
+			found++
+		}
+		curpos++
+	}
+	arti += "],\"location\":\"\",\"exclude\":false,\"lock\":true},"
+	return arti
 }
 
 var standards = []float64{16.54, 0.0496, 253.94, 0.0496, 19.68, 0.062, 19.82, 0.0551, 0.0331, 0.0662}
@@ -773,7 +803,7 @@ func multsubs(s []float64, mult float64) []float64 {
 var subchance = []int{6, 4, 6, 4, 6, 4, 4, 4, 3, 3}
 var srolls = []float64{0.824, 0.941, 1.059, 1.176}
 
-type subrolls struct {
+/*type subrolls struct {
 	Atk  float64
 	AtkP float64
 	HP   float64
@@ -784,29 +814,29 @@ type subrolls struct {
 	ER   float64
 	CR   float64
 	CD   float64
-}
+}*/ //then: heal, pyro,electro,cryo,hydro,anemo,geo,phys
 
-var rollints = []int{1,1,,,}
-var mschance = [][]int{
-	{0,0,1},
+var rollints = []int{1, 1, 30, 80, 50}
+var mschance = [][]int{ //chance of mainstat based on arti type
+	{0, 0, 1},
 	{1},
-	{},
-	{},
-	{}
+	{0, 8, 0, 8, 0, 8, 3, 3},
+	{0, 17, 0, 17, 0, 16, 2, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4},
+	{0, 11, 0, 11, 0, 11, 2, 0, 5, 5, 5},
 }
 
 func randomarti() []float64 {
-	arti := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0}
-arti[10]=rand.Intn(5) //this is type, 0flower, 1=feather, etc
-m:= rand.Intn(rollints[arti[10]])
-ttl:=0
-for i := range mschance[artis[10]] {
-	ttl += mschance[artis[10]]
-	if m < ttl {
-		artis[11] = i
-		break
+	arti := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	arti[10] = rand.Intn(5) //this is type, 0flower, 1=feather, etc
+	m := rand.Intn(rollints[arti[10]])
+	ttl := 0
+	for i := range mschance[artis[10]] {
+		ttl += mschance[artis[10]]
+		if m < ttl {
+			artis[11] = i
+			break
+		}
 	}
-}
 
 	count := 0
 	for count < 4 {
