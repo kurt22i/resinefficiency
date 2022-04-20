@@ -27,27 +27,33 @@ import (
 
 var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link to the gcsim that gives rotation, er reqs and optimization priority
 //var chars = make([]Character, 4);
-//var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
-//var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
+var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
+var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
 //var domains []string = {"esf"}
-var simspertest = 100000 //iterations to run gcsim at when testing dps gain from upgrades.
-//var godatafile = ""      //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
-var halp = false
+var simspertest = 100000      //iterations to run gcsim at when testing dps gain from upgrades.
+var godatafile = "GOdata.txt" //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
+var good string
 var artisims = 1000
 var artisfarmed = 100
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
-	flag.BoolVar(&halp, "halp", false, "use gzip instead of zlib")
+	//flag.BoolVar(&halp, "halp", false, "use gzip instead of zlib")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
 	flag.Parse()
+
+	if artifarmsims == -1 {
+		artifarmsims = 100000 / artifarmtime
+	}
+	good2, err2 := os.ReadFile(godatafile)
+	good = string(good2)
 
 	time.Now().UnixNano()
 	rand.Seed(42)
 
 	err := run()
 
-	if err != nil {
+	if err != nil || err2 != nil {
 		fmt.Printf("Error encountered, ending script: %+v\n", err)
 	}
 
@@ -685,7 +691,7 @@ func getrolls(str string) []float64 {
 
 func simartiupgrades(cursubs []float64, msc float64) string {
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	for i := 0; i < artisims; i++ {
+	for i := 0; i < artifarmsims; i++ {
 		avgsubs = addsubs(avgsubs, subsubs(farmartis(), cursubs))
 	}
 	for i := range avgsubs {
@@ -695,102 +701,6 @@ func simartiupgrades(cursubs []float64, msc float64) string {
 }
 
 func farmartis() []float64 {
-	//let nodes = [...valueFilter.map(x => x.value), optimizationTargetNode], arts = split!
-    const origCount = totBuildNumber
-	const minimum = [...valueFilter.map(x => x.minimum), -Infinity]
-    if (plotBase) {
-      nodes.push(input.total[plotBase])
-      minimum.push(-Infinity)
-    }
-
-    nodes = optimize(nodes, workerData, ({ path: [p] }) => p !== "dyn");
-    ({ nodes, arts } = pruneAll(nodes, minimum, arts, maxBuildsToShow,
-      new Set(setFilters.map(x => x.key as ArtifactSetKey)), {
-      reaffine: true, pruneArtRange: true, pruneNodeRange: true, pruneOrder: true
-    }))
-
-    const plotBaseNode = plotBase ? nodes.pop() : undefined
-    optimizationTargetNode = nodes.pop()!
-
-    let wrap = {
-      buildCount: 0, failedCount: 0, skippedCount: origCount,
-      buildValues: Array(maxBuildsToShow).fill(0).map(_ => -Infinity)
-    }
-    setPerms.forEach(filter => wrap.skippedCount -= countBuilds(filterArts(arts, filter)))
-
-    const setPerm = splitFiltersBySet(arts, setPerms,
-      maxWorkers === 1
-        // Don't split for single worker
-        ? Infinity
-        // 8 perms / worker, up to 1M builds / perm
-        : Math.min(origCount / maxWorkers / 4, 1_000_000))[Symbol.iterator]()
-
-    function fetchWork(): Request | undefined {
-      const { done, value } = setPerm.next()
-      return done ? undefined : {
-        command: "request",
-        threshold: wrap.buildValues[maxBuildsToShow - 1], filter: value,
-      }
-    }
-
-    const filters = nodes
-      .map((value, i) => ({ value, min: minimum[i] }))
-      .filter(x => x.min > -Infinity)
-
-    const finalizedList: Promise<FinalizeResult>[] = []
-    for (let i = 0; i < maxWorkers; i++) {
-      const worker = new Worker()
-
-      const setup: Setup = {
-        command: "setup",
-        id: `${i}`,
-        arts,
-        optimizationTarget: optimizationTargetNode,
-        plotBase: plotBaseNode,
-        maxBuilds: maxBuildsToShow,
-        filters
-      }
-      worker.postMessage(setup, undefined)
-      let finalize: (_: FinalizeResult) => void
-      const finalized = new Promise<FinalizeResult>(r => finalize = r)
-      worker.onmessage = async ({ data }: { data: WorkerResult }) => {
-        switch (data.command) {
-          case "interim":
-            wrap.buildCount += data.buildCount
-            wrap.failedCount += data.failedCount
-            wrap.skippedCount += data.skippedCount
-            if (data.buildValues) {
-              wrap.buildValues.push(...data.buildValues)
-              wrap.buildValues.sort((a, b) => b - a).splice(maxBuildsToShow)
-            }
-            break
-          case "request":
-            const work = fetchWork()
-            if (work) {
-              worker.postMessage(work)
-            } else {
-              const finalizeCommand: Finalize = { command: "finalize" }
-              worker.postMessage(finalizeCommand)
-            }
-            break
-          case "finalize":
-            worker.terminate()
-            finalize(data);
-            break
-          default: console.log("DEBUG", data)
-        }
-      }
-
-      cancelled.then(() => worker.terminate())
-      finalizedList.push(finalized)
-    }
-
-    const buildTimer = setInterval(() => {
-      setgenerationProgress(wrap.buildCount)
-      setgenerationSkipped(wrap.skippedCount)
-      setgenerationDuration(performance.now() - t1)
-    }, 100)
-    const results = await Promise.any([Promise.all(finalizedList), cancelled])
 
 }
 
