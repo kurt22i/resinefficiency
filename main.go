@@ -30,21 +30,29 @@ var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link
 //var chars = make([]Character, 4);
 var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
 var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
-//var domains []string = {"esf"}
+var domains []string
 var simspertest = 100000      //iterations to run gcsim at when testing dps gain from upgrades.
 var godatafile = "GOdata.txt" //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
 var good string
 var artisims = 1000
 var artisfarmed = 100
+var domstring = ""
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
 	//flag.BoolVar(&halp, "halp", false, "use gzip instead of zlib")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
+	flag.StringVar(&domstring, "d", "", "domains to farm")
 	flag.Parse()
 
 	if artifarmsims == -1 {
 		artifarmsims = 100000 / artifarmtime
+	}
+	if domstring == "" {
+		//refsimdomains
+		domains = []string{""}
+	} else {
+		domains = strings.Split(domstring, ",")
 	}
 	good2, err2 := os.ReadFile(godatafile)
 	good = string(good2)
@@ -55,7 +63,7 @@ func main() {
 	err := run()
 
 	if err != nil || err2 != nil {
-		fmt.Printf("Error encountered, ending script: %+v\n", err)
+		fmt.Printf("Error encountered, ending script: %+v\n", err2)
 	}
 
 	fmt.Print("\ntesting complete (press enter to exit)")
@@ -177,9 +185,36 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 		}
 
 		//add artifact test
-		tests = append(tests, test{"artifact", []int{i}})
+		//tests = append(tests, test{"artifact", []int{i}})
 	}
+
+	//artifact tests
+	if domains[0] == "" { //if the user didnt specify, farm the sim domains
+		//todo
+	} else {
+		for _, d := range domains {
+			tests = append(tests, test{"artifact", []int{domainid(d)}})
+		}
+	}
+
 	return tests
+}
+
+func domainid(dom string) int {
+	id := -1
+	for i, a := range artiabbrs {
+		if dom == a {
+			id = i
+		}
+	}
+
+	if id == -1 {
+		fmt.Printf("no domain found for %v", dom)
+		return -1
+	}
+
+	id = (id / 2) * 2 //if it's odd, subtract one
+	return id
 }
 
 func rarity(wep string) int {
@@ -418,7 +453,8 @@ func desc(t test, sd jsondata) (dsc string) {
 	case "weapon":
 		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
 	case "artifact":
-		return sd.Characters[t.params[0]].Name + " artifacts"
+		//return sd.Characters[t.params[0]].Name + " artifacts"
+		return "farm " + artiabbrs[t.params[0]] + " domain"
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -707,12 +743,12 @@ func simartiupgrades(cursubs []float64, domain int, baseline jsondata) string {
 }
 
 func farmartis(domain int, baseline jsondata) []float64 {
-	/*artistartpos := strings.Index(good, "artifacts\"") + 11
+	artistartpos := strings.Index(good, "artifacts\"") + 11
 	newartis := ""
 	for i := 0; i < artifarmtime; i++ {
 		newartis += randomGOarti(domain)
 	}
-	gojsondata := good[:artistartpos] + newartis + good[artistartpos:]*/
+	gojsondata := good[:artistartpos] + newartis + good[artistartpos:]
 
 	//ugly sorting code - sorts sim chars by dps, which is the order we should optimize them in
 	chars := []string{"", "", "", ""}
@@ -729,11 +765,14 @@ func farmartis(domain int, baseline jsondata) []float64 {
 		}
 	}
 
+	os.WriteFile("gojsontest.txt", []byte(gojsondata), 0755)
+
 	//build := optimize(gojsondata, "kokomi")
 	return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 }
 
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame"}
+var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf"}
 
 var slotKey = []string{"flower", "feather", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "em", "er_", "cr_", "cd_", "heal", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "phys_dmg_"}
