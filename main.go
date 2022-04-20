@@ -26,7 +26,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link to the gcsim that gives rotation, er reqs and optimization priority
+var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link to the gcsim that gives rotation, er reqs and optimization priority. actually no er reqs unless user wants, instead, let them use their er and set infinite energy.
 //var chars = make([]Character, 4);
 var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
 var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
@@ -638,7 +638,8 @@ func runArtifactTest(t test, config string, baseline jsondata) (c string) { //pa
 	lines := strings.Split(config, "\n")
 	count := 0
 	curline := -1
-	for count <= t.params[0]*2+1 {
+	//for count <= t.params[0]*2+1 {
+	for count <= 1 { //we will be replacing all char's artis now, this needs to be implemented
 		curline++
 		if strings.Contains(lines[curline], "add stats") {
 			count++
@@ -795,9 +796,9 @@ func randomGOarti(domain int) string {
 	arti += artinames[domain+rand.Intn(2)]
 	arti += "\",\"rarity\":5,\"level\":0,\"slotKey\":\""
 	artistats := randomarti()
-	arti += slotKey[int(artistats[11])]
+	arti += slotKey[int(artistats[10])]
 	arti += "\",\"mainStatKey\":\""
-	arti += statKey[int(artistats[10])]
+	arti += statKey[int(artistats[11])]
 	arti += "\",\"substats\":["
 	curpos := 0
 	found := 0
