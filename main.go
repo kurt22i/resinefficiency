@@ -267,7 +267,12 @@ type jsondata struct {
 	} `json:"char_details"`
 	DPSraw    FloatResult `json:"dps"`
 	NumTarget int         `json:"target_count"`
-	DPS       float64
+	CharDPS   []struct {
+		DPS1 FloatResult `json:"1"`
+		DPS2 FloatResult `json:"2"`
+		DPS3 FloatResult `json:"3"`
+	} `json:"damage_by_char_by_targets"`
+	DPS float64
 }
 
 type FloatResult struct {
@@ -379,7 +384,7 @@ func runTest(t test, config string, baseline jsondata) (res result) {
 	case "weapon":
 		simdata = runSim(runWeaponTest(t, config))
 	case "artifact":
-		simdata = runSim(runArtifactTest(t, config))
+		simdata = runSim(runArtifactTest(t, config, baseline))
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -471,7 +476,7 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.mora += wpmora[t.params[1]-3][(t.params[3]-30)/10-1]
 		}
 	case "artifact":
-		mats.artifacts += artifarm
+		mats.artifacts += artifarmtime
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -592,7 +597,7 @@ type subrolls struct {
 	CD   float64
 }
 
-func runArtifactTest(t test, config string) (c string) { //params for artifact test: 0: charid
+func runArtifactTest(t test, config string, baseline jsondata) (c string) { //params for artifact test: 0: charid
 	lines := strings.Split(config, "\n")
 	count := 0
 	curline := -1
@@ -604,7 +609,7 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 	}
 
 	newline := lines[curline][0:strings.Index(lines[curline], "add stats")+9] + " "
-	newline += simartiupgrades(getrolls(lines[curline]), getmsc(lines[curline-1])) + ";"
+	newline += simartiupgrades(getrolls(lines[curline]), getmsc(lines[curline-1]), baseline) + ";"
 	lines[curline] = newline
 
 	return strings.Join(lines, "\n")
@@ -689,10 +694,10 @@ func getrolls(str string) []float64 {
 	return rolls
 }
 
-func simartiupgrades(cursubs []float64, msc float64) string {
+func simartiupgrades(cursubs []float64, domain int, baseline jsondata) string {
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	for i := 0; i < artifarmsims; i++ {
-		avgsubs = addsubs(avgsubs, subsubs(farmartis(), cursubs))
+		avgsubs = addsubs(avgsubs, subsubs(farmartis(,baseline), cursubs))
 	}
 	for i := range avgsubs {
 		avgsubs[i] /= float64(artisims)
@@ -700,14 +705,31 @@ func simartiupgrades(cursubs []float64, msc float64) string {
 	return torolls(addsubs(cursubs, avgsubs))
 }
 
-func farmartis(int domain) []float64 {
-	newgood := good
-	artistartpos = strings.Index(good, "artifacts\"") + 11
+func farmartis(domain int, baseline jsondata) []float64 {
+	artistartpos := strings.Index(good, "artifacts\"") + 11
 	newartis := ""
 	for i := 0; i < artifarmtime; i++ {
 		newartis += randomGOarti(domain)
 	}
+	gojsondata := good[:artistartpos] + newartis + good[artistartpos:]
 
+	//ugly sorting code - sorts sim chars by dps, which is the order we should optimize them in
+	chars := []string{"", "", "", ""}
+	chardps := []float64{-1.0,-1.0,-1.0,-1.0}
+	for i := range baseline.CharDPS {
+		chardps[i] = baseline.CharDPS[i].DPS1.Mean
+	}
+	sort.Float64(chardps)
+	for(i := range baseline.Characters) {
+		for j:=range chardps {
+			if(baseline.CharDPS[i].DPS1.Mean == chardps[j]) {
+				chars[j] = baseline.Characters[i].Name
+			}
+		}
+	}
+
+	build := optimize(gojsondata,"kokomi")
+	return []float64{0,0,0,0,0,0,0,0,0,0}
 }
 
 func randomGOarti(domain int) string {
