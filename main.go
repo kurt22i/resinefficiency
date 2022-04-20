@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -597,7 +598,6 @@ type subrolls struct {
 	CD   float64
 }
 
-func runArtifactTest(t test, config string, baseline jsondata) (c string) { //params for artifact test: 0: charid
 	lines := strings.Split(config, "\n")
 	count := 0
 	curline := -1
@@ -609,7 +609,7 @@ func runArtifactTest(t test, config string, baseline jsondata) (c string) { //pa
 	}
 
 	newline := lines[curline][0:strings.Index(lines[curline], "add stats")+9] + " "
-	newline += simartiupgrades(getrolls(lines[curline]), getmsc(lines[curline-1]), baseline) + ";"
+	newline += simartiupgrades(getrolls(lines[curline]), t.params[0], baseline) + ";"
 	lines[curline] = newline
 
 	return strings.Join(lines, "\n")
@@ -697,7 +697,7 @@ func getrolls(str string) []float64 {
 func simartiupgrades(cursubs []float64, domain int, baseline jsondata) string {
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	for i := 0; i < artifarmsims; i++ {
-		avgsubs = addsubs(avgsubs, subsubs(farmartis(,baseline), cursubs))
+		avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, baseline), cursubs))
 	}
 	for i := range avgsubs {
 		avgsubs[i] /= float64(artisims)
@@ -706,40 +706,58 @@ func simartiupgrades(cursubs []float64, domain int, baseline jsondata) string {
 }
 
 func farmartis(domain int, baseline jsondata) []float64 {
-	artistartpos := strings.Index(good, "artifacts\"") + 11
+	/*artistartpos := strings.Index(good, "artifacts\"") + 11
 	newartis := ""
 	for i := 0; i < artifarmtime; i++ {
 		newartis += randomGOarti(domain)
 	}
-	gojsondata := good[:artistartpos] + newartis + good[artistartpos:]
+	gojsondata := good[:artistartpos] + newartis + good[artistartpos:]*/
 
 	//ugly sorting code - sorts sim chars by dps, which is the order we should optimize them in
 	chars := []string{"", "", "", ""}
-	chardps := []float64{-1.0,-1.0,-1.0,-1.0}
+	chardps := []float64{-1.0, -1.0, -1.0, -1.0}
 	for i := range baseline.CharDPS {
 		chardps[i] = baseline.CharDPS[i].DPS1.Mean
 	}
-	sort.Float64(chardps)
-	for(i := range baseline.Characters) {
-		for j:=range chardps {
-			if(baseline.CharDPS[i].DPS1.Mean == chardps[j]) {
+	sort.Float64s(chardps)
+	for i := range baseline.Characters {
+		for j := range chardps {
+			if baseline.CharDPS[i].DPS1.Mean == chardps[j] {
 				chars[j] = baseline.Characters[i].Name
 			}
 		}
 	}
 
-	build := optimize(gojsondata,"kokomi")
-	return []float64{0,0,0,0,0,0,0,0,0,0}
+	//build := optimize(gojsondata, "kokomi")
+	return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 }
+
+var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame"}
+
+var slotKey = []string{"flower", "feather", "sands", "goblet", "circlet"}
+var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "em", "er_", "cr_", "cd_", "heal", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "phys_dmg_"}
+
+/*type subrolls struct {
+	Atk  float64
+	AtkP float64
+	HP   float64
+	HPP  float64
+	Def  float64
+	DefP float64
+	EM   float64
+	ER   float64
+	CR   float64
+	CD   float64
+}*/ //then: heal, pyro,electro,cryo,hydro,anemo,geo,phys
 
 func randomGOarti(domain int) string {
 	arti := "{\"setKey\":\""
 	arti += artinames[domain+rand.Intn(2)]
 	arti += "\",\"rarity\":5,\"level\":0,\"slotKey\":\""
 	artistats := randomarti()
-	arti += slotKey[artistats[11]]
+	arti += slotKey[int(artistats[11])]
 	arti += "\",\"mainStatKey\":\""
-	arti += statKey[artistats[10]]
+	arti += statKey[int(artistats[10])]
 	arti += "\",\"substats\":["
 	curpos := 0
 	found := 0
@@ -849,13 +867,13 @@ var mschance = [][]int{ //chance of mainstat based on arti type
 
 func randomarti() []float64 {
 	arti := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	arti[10] = rand.Intn(5) //this is type, 0flower, 1=feather, etc
-	m := rand.Intn(rollints[arti[10]])
+	arti[10] = float64(rand.Intn(5)) //this is type, 0=flower, 1=feather, etc... all these type conversions can't be ideal, should do this a diff way
+	m := rand.Intn(rollints[int(arti[10])])
 	ttl := 0
-	for i := range mschance[artis[10]] {
-		ttl += mschance[artis[10]]
+	for i := range mschance[int(arti[10])] {
+		ttl += mschance[int(arti[10])][i]
 		if m < ttl {
-			artis[11] = i
+			arti[11] = float64(i)
 			break
 		}
 	}
