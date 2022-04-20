@@ -744,7 +744,7 @@ func simartiupgrades(cursubs []float64, domain int, baseline jsondata) string {
 }
 
 func farmartis(domain int, baseline jsondata) []float64 {
-	artistartpos := strings.Index(good, "artifacts\"") + 11
+	artistartpos := strings.Index(good, "artifacts\"") + 12
 	newartis := ""
 	for i := 0; i < artifarmtime; i++ {
 		newartis += randomGOarti(domain)
@@ -775,8 +775,9 @@ func farmartis(domain int, baseline jsondata) []float64 {
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame"}
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf"}
 
-var slotKey = []string{"flower", "feather", "sands", "goblet", "circlet"}
-var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "em", "er_", "cr_", "cd_", "heal", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "phys_dmg_"}
+var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
+var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "phys_dmg_"}
+var ispct = []int{1, 100, 1, 100, 1, 100, 1, 100, 100, 100}
 
 /*type subrolls struct {
 	Atk  float64
@@ -794,7 +795,7 @@ var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "em", "er_", "
 func randomGOarti(domain int) string {
 	arti := "{\"setKey\":\""
 	arti += artinames[domain+rand.Intn(2)]
-	arti += "\",\"rarity\":5,\"level\":0,\"slotKey\":\""
+	arti += "\",\"rarity\":5,\"level\":20,\"slotKey\":\""
 	artistats := randomarti()
 	arti += slotKey[int(artistats[10])]
 	arti += "\",\"mainStatKey\":\""
@@ -807,7 +808,11 @@ func randomGOarti(domain int) string {
 			arti += "{\"key\":\""
 			arti += statKey[curpos]
 			arti += "\",\"value\":"
-			arti += fmt.Sprintf("%.1f", artistats[curpos])
+			if ispct[curpos] == 1 {
+				arti += fmt.Sprintf("%.0f", standards[curpos]*artistats[curpos])
+			} else {
+				arti += fmt.Sprintf("%.1f", 100.0*standards[curpos]*artistats[curpos])
+			}
 			arti += "}"
 			if found < 3 {
 				arti += ","
