@@ -471,7 +471,7 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.mora += wpmora[t.params[1]-3][(t.params[3]-30)/10-1]
 		}
 	case "artifact":
-		mats.artifacts += artisfarmed
+		mats.artifacts += artifarm
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -700,8 +700,13 @@ func simartiupgrades(cursubs []float64, msc float64) string {
 	return torolls(addsubs(cursubs, avgsubs))
 }
 
-func farmartis() []float64 {
-
+func farmartis(int domain) []float64 {
+	newgood := good
+	artistartpos = strings.Index(good,"artifacts\"") + 11
+	newartis := ""
+	for i:=artifarmtime {
+		newartis += randomGOarti(domain)
+	}
 }
 
 var standards = []float64{16.54, 0.0496, 253.94, 0.0496, 19.68, 0.062, 19.82, 0.0551, 0.0331, 0.0662}
@@ -768,16 +773,45 @@ func multsubs(s []float64, mult float64) []float64 {
 var subchance = []int{6, 4, 6, 4, 6, 4, 4, 4, 3, 3}
 var srolls = []float64{0.824, 0.941, 1.059, 1.176}
 
-func randomarti(msc float64) []float64 {
-	setmult := 0.6 //0.5 for right set, 0.1 for wrong set but offpiece
-	arti := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	if rand.Float64() > msc*setmult { //the artifact was unusably offset or had the wrong main stat
-		return arti
+type subrolls struct {
+	Atk  float64
+	AtkP float64
+	HP   float64
+	HPP  float64
+	Def  float64
+	DefP float64
+	EM   float64
+	ER   float64
+	CR   float64
+	CD   float64
+}
+
+var rollints = []int{1,1,,,}
+var mschance = [][]int{
+	{0,0,1},
+	{1},
+	{},
+	{},
+	{}
+}
+
+func randomarti() []float64 {
+	arti := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0}
+arti[10]=rand.Intn(5) //this is type, 0flower, 1=feather, etc
+m:= rand.Intn(rollints[arti[10]])
+ttl:=0
+for i := range mschance[artis[10]] {
+	ttl += mschance[artis[10]]
+	if m < ttl {
+		artis[11] = i
+		break
 	}
+}
+
 	count := 0
 	for count < 4 {
 		s := rand.Intn(44)
-		ttl := 0
+		ttl = 0
 		for i := range subchance {
 			ttl += subchance[i]
 			if s < ttl {
@@ -803,7 +837,7 @@ func randomarti(msc float64) []float64 {
 		}
 	}
 
-	arti[7] = 0 //no er allowed
+	//arti[7] = 0 //no er allowed
 
 	return arti
 }
