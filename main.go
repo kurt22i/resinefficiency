@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -34,20 +35,22 @@ var domains []string
 var simspertest = 100000      //iterations to run gcsim at when testing dps gain from upgrades.
 var godatafile = "GOdata.txt" //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
 var good string
+var step1 = false
 var artisims = 1000
 var artisfarmed = 100
 var domstring = ""
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
-	//flag.BoolVar(&halp, "halp", false, "use gzip instead of zlib")
+	flag.BoolVar(&step1, "p1", false, "generate artis")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
 	flag.StringVar(&domstring, "d", "", "domains to farm")
 	flag.Parse()
 
 	if artifarmsims == -1 {
-		artifarmsims = 100000 / artifarmtime
+		artifarmsims = 10000 / artifarmtime
 	}
+	fmt.Printf("%v", artifarmsims)
 	if domstring == "" {
 		//refsimdomains
 		domains = []string{""}
@@ -454,7 +457,7 @@ func desc(t test, sd jsondata) (dsc string) {
 		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
 	case "artifact":
 		//return sd.Characters[t.params[0]].Name + " artifacts"
-		return "farm " + artiabbrs[t.params[0]] + " domain"
+		return "farm " + artiabbrs[t.params[0]] + " domain for " + fmt.Sprintf("%.1f", float64(artifarmtime)/(9.0*1.07)) + " days"
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -639,9 +642,9 @@ func runArtifactTest(t test, config string, baseline jsondata) (c string) { //pa
 	count := 0
 	curline := -1
 	//for count <= t.params[0]*2+1 {
-	for count <= 1 { //we will be replacing all char's artis now, this needs to be implemented
+	for count < 1 { //we will be replacing all char's artis now, this needs to be implemented
 		curline++
-		if strings.Contains(lines[curline], "add stats") {
+		if strings.Contains(lines[curline], "ganyu add stats def") {
 			count++
 		}
 	}
@@ -733,42 +736,111 @@ func getrolls(str string) []float64 {
 }
 
 func simartiupgrades(cursubs []float64, domain int, baseline jsondata) string {
+
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	for i := 0; i < artifarmsims; i++ {
-		avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, baseline), cursubs))
+	//for i := 0; i < artifarmsims; i++ {
+	//	avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, i, baseline), cursubs))
+	//}
+	count := 0
+	err := filepath.Walk("./use", func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		//fmt.Printf("here")
+		file, err3 := os.ReadFile(path)
+		count++
+		if err3 != nil {
+			return errors.Wrap(err3, "")
+		}
+		//fmt.Printf("here")
+		strfile := string(file)
+		for i := 0; i < 5; i++ {
+			strfile = strfile[strings.Index(strfile, "location\":\"Ganyu")-250:]
+			strfile = strfile[strings.Index(strfile, "mainStatKey")+14:]
+			msk := strfile[:strings.Index(strfile, "\"")]
+			if getStatID(msk) < 10 {
+				//fmt.Printf("%v\n", avgsubs)
+				avgsubs[getStatID(msk)] += msv[getStatID(msk)] / standards[getStatID(msk)]
+				//fmt.Printf("%v\n", avgsubs)
+			}
+			for j := 0; j < 4; j++ {
+				strfile = strfile[strings.Index(strfile, "key")+6:]
+				ssk := strfile[:strings.Index(strfile, "\"")]
+				//fmt.Printf("%v", ssk)
+				strfile = strfile[strings.Index(strfile, "value")+7:]
+				ssv := strfile[:strings.Index(strfile, "}")]
+				//fmt.Printf("%v", ssv)
+				ssvv, err2 := strconv.ParseFloat(ssv, 64)
+				if err2 != nil {
+					return errors.Wrap(err2, "")
+				}
+				avgsubs[getStatID(ssk)] += ssvv / standards[getStatID(ssk)] / float64(ispct[getStatID(ssk)])
+			}
+			strfile = strfile[100:]
+		}
+		//fmt.Printf("%v", avgsubs)
+		avgsubs = subsubs(avgsubs, cursubs)
+
+		return nil
+	})
+
+	if err != nil {
+		fmt.Printf("%v", err)
 	}
+
+	//fmt.Printf("%v", avgsubs)
 	for i := range avgsubs {
-		avgsubs[i] /= float64(artisims)
+		//avgsubs[i] /= float64(artisims)
+		avgsubs[i] /= float64(count)
 	}
+	fmt.Printf("%v", avgsubs)
 	return torolls(addsubs(cursubs, avgsubs))
 }
 
-func farmartis(domain int, baseline jsondata) []float64 {
-	artistartpos := strings.Index(good, "artifacts\"") + 12
-	newartis := ""
-	for i := 0; i < artifarmtime; i++ {
-		newartis += randomGOarti(domain)
-	}
-	gojsondata := good[:artistartpos] + newartis + good[artistartpos:]
-
-	//ugly sorting code - sorts sim chars by dps, which is the order we should optimize them in
-	chars := []string{"", "", "", ""}
-	chardps := []float64{-1.0, -1.0, -1.0, -1.0}
-	for i := range baseline.CharDPS {
-		chardps[i] = baseline.CharDPS[i].DPS1.Mean
-	}
-	sort.Float64s(chardps)
-	for i := range baseline.Characters {
-		for j := range chardps {
-			if baseline.CharDPS[i].DPS1.Mean == chardps[j] {
-				chars[j] = baseline.Characters[i].Name
-			}
+func getStatID(key string) int {
+	for i, k := range statKey {
+		if k == key {
+			return i
 		}
 	}
+	fmt.Printf("%v not recognized as a key", key)
+	return -1
+}
 
-	os.WriteFile("gojsontest.txt", []byte(gojsondata), 0755)
+func farmartis(domain, t int, baseline jsondata) []float64 {
+	if step1 {
+		artistartpos := strings.Index(good, "artifacts\"") + 12
+		newartis := ""
+		for i := 0; i < artifarmtime; i++ {
+			newartis += randomGOarti(domain)
+		}
+		gojsondata := good[:artistartpos] + newartis + good[artistartpos:]
 
-	//build := optimize(gojsondata, "kokomi")
+		//ugly sorting code - sorts sim chars by dps, which is the order we should optimize them in (except this is a waste bc user has to specify anyway rn)
+		chars := []string{"", "", "", ""}
+		chardps := []float64{-1.0, -1.0, -1.0, -1.0}
+		for i := range baseline.CharDPS {
+			chardps[i] = baseline.CharDPS[i].DPS1.Mean
+		}
+		sort.Float64s(chardps)
+		for i := range baseline.Characters {
+			for j := range chardps {
+				if baseline.CharDPS[i].DPS1.Mean == chardps[j] {
+					chars[j] = baseline.Characters[i].Name
+				}
+			}
+		}
+
+		fmt.Printf("here")
+		//fmt.Printf("./" + fmt.Sprintf("%0.f", float64(domain)) + "/gojson" + fmt.Sprintf("%.0f", float64(t)) + ".txt")
+		//os.WriteFile("./"+fmt.Sprintf("%0.f", float64(domain))+"/gojson"+fmt.Sprintf("%.0f", float64(t))+".txt", []byte(gojsondata), 0755)
+		os.WriteFile(fmt.Sprintf("%0.f", float64(domain))+"gojson"+fmt.Sprintf("%.0f", float64(t))+".txt", []byte(gojsondata), 0755)
+
+		//build := optimize(gojsondata, "kokomi")
+
+		//exec.Command("./GO", "-json", "GOdata.json").Output()
+		return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	}
 	return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 }
 
@@ -776,7 +848,10 @@ var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer"
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
-var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "phys_dmg_"}
+var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
+var msv = []float64{311.0, 0.466, 4780, 0.466, -1, 0.583, 187, 0.518, 0.311, 0.622, 0.359, 0.466, 0.466, 0.466, 0.466, 0.466, 0.466, 0.583}
+
+//def% heal and phys might be wrong
 var ispct = []int{1, 100, 1, 100, 1, 100, 1, 100, 100, 100}
 
 /*type subrolls struct {
@@ -873,7 +948,7 @@ func addsubs(s1, s2 []float64) []float64 {
 func subsubs(s1, s2 []float64) []float64 {
 	sub := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	for i := range sub {
-		sub[i] = math.Max(0, s1[i]-s2[i])
+		sub[i] = s1[i] - s2[i] //math.Max(0, s1[i]-s2[i])
 	}
 	return sub
 }
