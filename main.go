@@ -19,7 +19,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -35,22 +34,22 @@ var domains []string
 var simspertest = 100000      //iterations to run gcsim at when testing dps gain from upgrades.
 var godatafile = "GOdata.txt" //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
 var good string
-var step1 = false
-var artisims = 1000
-var artisfarmed = 100
 var domstring = ""
+var optiorder = []string{"ph0", "ph1", "ph2", "ph3"} //the order in which to optimize the characters
+var manualOverride = ""
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
-	flag.BoolVar(&step1, "p1", false, "generate artis")
+	//flag.BoolVar(&step1, "p1", false, "generate artis")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
 	flag.StringVar(&domstring, "d", "", "domains to farm")
+	flag.StringVar(&manualOverride, "mo", "", "override which artis to sim the result sims with, used when changing sets")
 	flag.Parse()
 
 	if artifarmsims == -1 {
 		artifarmsims = 10000 / artifarmtime
 	}
-	fmt.Printf("%v", artifarmsims)
+
 	if domstring == "" {
 		//refsimdomains
 		domains = []string{""}
@@ -193,6 +192,7 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 	}
 
 	//artifact tests
+	makeOptiOrder(data)   //generate the order in which to optimize the chars
 	if domains[0] == "" { //if the user didnt specify, farm the sim domains
 		//todo
 	} else {
@@ -204,7 +204,30 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 	return tests
 }
 
-func domainid(dom string) int {
+func makeOptiOrder(data jsondata) { //sort the chars by dps in refsim to determine optimization order
+	dps := []float64{-1.0, -1.0, -1.0, -1.0}
+	for i := range data.CharDPS { //sort the dps's... right now using dps vs primary target, should use their ttl dps
+		for j := range dps {
+			if data.CharDPS[i].DPS1.Mean > dps[j] {
+				for k := 3; k > j; k-- {
+					dps[k] = dps[k-1]
+				}
+				dps[j] = data.CharDPS[i].DPS1.Mean
+				break
+			}
+		}
+	}
+
+	for i, c := range data.Characters { //now sort the names accordingly. could probably do both at once with better code
+		for j := range dps {
+			if data.CharDPS[i].DPS1.Mean == dps[j] {
+				optiorder[j] = c.Name
+			}
+		}
+	}
+}
+
+func domainid(dom string) int { //returns the interal id for an artifact's domain
 	id := -1
 	for i, a := range artiabbrs {
 		if dom == a {
@@ -222,13 +245,6 @@ func domainid(dom string) int {
 }
 
 func rarity(wep string) int {
-	// for _, w := range weps {
-	// 	if w.Name == wep {
-	// 		return w.Rarity
-	// 	}
-	// }
-	//fmt.Printf("weapon not found: %v", wep)
-
 	jsn, err := os.ReadFile("./wep/" + wep + ".json")
 	if err != nil {
 		fmt.Println(err)
@@ -424,7 +440,7 @@ func runTest(t test, config string, baseline jsondata) (res result) {
 	case "weapon":
 		simdata = runSim(runWeaponTest(t, config))
 	case "artifact":
-		simdata = runSim(runArtifactTest(t, config, baseline))
+		simdata = runSim(runArtifactTest(t, config))
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -638,79 +654,205 @@ type subrolls struct {
 	CD   float64
 }
 
-func runArtifactTest(t test, config string, baseline jsondata) (c string) { //params for artifact test: 0: domainid
+func runArtifactTest(t test, config string) (c string) { //params for artifact test: 0: domainid
 	lines := strings.Split(config, "\n")
-	count := 0
-	curline := -1
-	//for count <= t.params[0]*2+1 {
-	for count < 1 { //we will be replacing all char's artis now, this needs to be implemented
-		curline++
-		if strings.Contains(lines[curline], "ganyu add set") {
-			lines[curline] = "ganyu add set=\"blizzardstrayer\" count=4;"
-		}
-		if strings.Contains(lines[curline], "ganyu add stats def") {
-			count++
+
+	for _, l := range lines { //remove all set and stats lines
+		if strings.Contains(l, "add stats") { //|| strings.Contains(l, "add set") {
+			l = ""
+		} else if strings.Contains(l, "add stats") {
+			if strings.Contains(manualOverride, l[:strings.Index(l, " ")]) {
+				l = ""
+			}
 		}
 	}
-	changelines := []int{3, 8}
-	for _, l := range changelines {
-		newline := lines[l][0:strings.Index(lines[l], "add stats")+9] + " "
-		newline += simartiupgrades(getrolls(lines[l]), t.params[0], l, baseline) + "cryo%=0.466;"
-		lines[l] = newline
+
+	for i := range optiorder {
+		lines = append(lines, makeNewLines(t.params[0], i))
 	}
 
 	return strings.Join(lines, "\n")
 }
 
-func getmsc(str string) float64 { //msc=mainstatchance
-	msc := 0.0
-	str2 := str[strings.Index(str, "atk=")+7:]
-	count := 0
-	if strings.Count(str2, "atk%=") == 1 { //atk% sands
-		msc += 0.2667 / 5.0
-		count++
-	} else if strings.Count(str2, "atk%=") == 3 { //shenhe 3x atk
-		//msc+=0.2667*3.0/5.0 wait this doesnt work
-		fmt.Printf("do 3x atk")
-		count = 3
+func makeNewLines(d, c int) string {
+	farmJSONs(d)
+	runAutoGO(c)
+	return parseAGresults(c)
+}
+
+func runAutoGO(c int) {
+	makeTemplate(c)
+	cmd := exec.Command("npm run start")
+	cmd.Dir = "./AutoGO"
+	out, err := cmd.Output()
+	fmt.Printf("%v", out)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	bufio.NewReader(os.Stdin).ReadBytes('\n') //wait for the user to signify autogo is done by pressing enter
+}
+
+func makeTemplate(c int) {
+	exec.Command("node AutoGO/src/createTemplate.js " + GOchars[getCharID(optiorder[c])] + " tmpl").Output()
+}
+
+func getCharID(name string) int {
+	for i, c := range simChars {
+		if c == name {
+			return simCharsID[i]
+		}
+	}
+	fmt.Printf("%v not found in list of sim characters", name)
+	return -1
+}
+
+type AGresult struct {
+	User string `json:"user"`
+	Data string `json:"data"`
+}
+
+func parseAGresults(c int) string {
+	jsonData, err := os.ReadFile("./AutoGO/output/output.json")
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	var results []AGresult
+	err = json.Unmarshal([]byte(jsonData), &results)
+	if err != nil {
+		fmt.Printf("%v", err)
 	}
 
-	if strings.Count(str2, "cr=") == 1 || strings.Count(str2, "cd=") == 1 { //crit circlets. assume either work. ayaka exception at some point needed too.
-		msc += 0.2 / 5.0
-		count++
+	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i := range results { //ttl up all the arti sim iters
+		newsubs := getAGsubs(results[i].Data)
+		avgsubs = addsubs(avgsubs, newsubs)
+		deleteArtis(results[i].User, newsubs) //delete the artis chosen so that they're not selected again for another char
 	}
 
-	if strings.Count(str2, "er=") == 1 { //hp% sands
-		msc += 0.1 / 5.0
-		count++
+	for i := range avgsubs { //complete the average
+		avgsubs[i] /= float64(len(results))
 	}
 
-	if strings.Count(str2, "hp%=") == 1 { //hp% sands
-		msc += 0.2667 / 5.0
-		count++
-	} else if strings.Count(str2, "hp%=") == 2 { //hp% sands and gob
-		msc += 0.2667/5.0 + 0.2125/5.0
-		count += 2
-	} else if strings.Count(str2, "hp%=") == 2 { //3x hp%
-		msc += 0.2667/5.0 + 0.2125/5.0 + 0.22/5.0
-		count += 3
+	newlines := ""
+
+	//we really should count how many arti sims use each set bonus combo, and run sims for each of them (numsims = numregularsims(10000 usually) * % of trials that had this set bonus combo), then avg results..
+	//but for now... manual overrides when switching sets
+	if strings.Contains(manualOverride, optiorder[c]) {
+		override := manualOverride[strings.Index(manualOverride, optiorder[c]):]
+		if strings.Contains(override, ",") {
+			override = override[:strings.Index(override, ",")-1]
+		}
+		if strings.Contains(override, "4") {
+			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "4")+1:]) + "\" count=4;\n"
+		} else {
+			override = override[strings.Index(override, "2")+1:]
+			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[:strings.Index(override, "2")-1]) + "\" count=2;\n"
+			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "2")+1:]) + "\" count=2;\n"
+		}
 	}
 
-	if strings.Count(str2, "heal=") == 1 { //heal circlet
-		msc += 0.1 / 5.0
-		count++
+	newlines += optiorder[c] + " add stats " + torolls(avgsubs) + ";"
+	return newlines
+}
+
+type GOarti struct {
+	SetKey      string `json:"setKey"`
+	Rarity      int    `json:"rarity"`
+	Level       int    `json:"level"`
+	SlotKey     string `json:"slotKey"`
+	MainStatKey string `json:"mainStatKey"`
+	Substats    []struct {
+		Key   string  `json:"key"`
+		Value float64 `json:"value"`
+	} `json:"substats"`
+	Location string `json:"location"`
+	Exclude  bool   `json:"exclude"`
+	Lock     bool   `json:"lock"`
+}
+
+func deleteArtis(file string, artistats []float64) {
+	f, err := os.ReadFile("./AutoGO/good/" + file + ".json")
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	rawgood := string(f)
+	artisection := "{" + rawgood[strings.Index(rawgood, "artifacts\"")+10:strings.Index(rawgood, "weapons\"")] + "}"
+	if strings.Contains(file, "gojson0") {
+		fmt.Printf("%v", artisection)
+	}
+	var artis []GOarti
+	err = json.Unmarshal([]byte(artisection), &artis)
+	//asnowman := subsubs(ar)
+	found := 0
+	for i := range artis { //this currently works by looking for an arti with 3 stats = and 1 stat bigger (main stat), should be good enough?
+		toobig := 0
+		for j, s := range artis[i].Substats {
+			if artistats[getStatID(s.Key)] < s.Value {
+				break
+			} else if artistats[getStatID(s.Key)] > s.Value {
+				toobig++
+				if toobig >= 2 {
+					break
+				}
+			}
+			if j == 3 {
+				found++
+				artis[i] = artis[len(artis)-1]
+				artis = artis[:len(artis)-1]
+			}
+		}
+		if found >= 5 {
+			break
+		}
 	}
 
-	if strings.Count(str2, "em=") == 1 && count == 0 { //em. for now assume single em is condensed triple em lol.. rly gotta do this function properly at some point
-		msc += 0.1/5.0 + 0.025/5.0 + 0.04/5.0
-		count = 3
+	if found < 5 {
+		fmt.Printf("failed to delete artifact %v", artistats)
 	}
 
-	if count < 3 { //if count still not 3 assume dmg goblet
-		msc += 0.05 / 5.0
-	}
+	marsh, err := json.Marshal(artis)
+	newas := string(marsh)
+	newas = "[" + newas[1:len(newas)-1] + "]"
+	newgood := rawgood[:strings.Index(rawgood, "artifacts\"")+10] + newas + rawgood[strings.Index(rawgood, "weapons\""):]
+	os.WriteFile("./AutoGO/good/"+file+".json", []byte(newgood), 0755)
+}
 
-	return msc + 0.4
+func getAGsubs(raw string) []float64 {
+	subs := newsubs()
+	artis := strings.Split(raw, "|")
+	for _, a := range artis {
+		if a == "" {
+			continue
+		}
+		stats := strings.Split(a, "~")
+		for _, s := range stats {
+			if s == "" {
+				continue
+			}
+			stattype := s[:strings.Index(s, "=")+1]
+			val := s[strings.Index(s, "=")+1:]
+			parse, _ := strconv.ParseFloat(val, 64)
+			subs[AGstatid(stattype, val)] += parse
+		}
+	}
+	return subs
+}
+
+func newsubs() []float64 { //empty stat array
+	return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+}
+
+func AGstatid(key, val string) int {
+	for i, k := range AGstatKeys {
+		if k == key {
+			if i < 6 && strings.Contains(val, "%") {
+				return i + 1 //the key for flat vs % hp, atk and def is the same, so we have to look at the value
+			}
+			return i
+		}
+	}
+	fmt.Printf("no stat found for the AG key %v", key)
+	return -1
 }
 
 func getrolls(str string) []float64 {
@@ -751,7 +893,7 @@ func simartiupgrades(cursubs []float64, domain, line int, baseline jsondata) str
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	if step1 {
 		for i := 0; i < artifarmsims; i++ {
-			avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, i, baseline), cursubs))
+			//avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, i, baseline), cursubs))
 		}
 		for i := range avgsubs {
 			avgsubs[i] /= float64(artifarmsims)
@@ -828,8 +970,23 @@ func getStatID(key string) int {
 	return -1
 }
 
-func farmartis(domain, t int, baseline jsondata) []float64 {
-	if step1 {
+//ugly sorting code - sorts sim chars by dps, which is the order we should optimize them in (except this is a waste bc user has to specify anyway rn)
+/*chars := []string{"", "", "", ""}
+chardps := []float64{-1.0, -1.0, -1.0, -1.0}
+for i := range baseline.CharDPS {
+	chardps[i] = baseline.CharDPS[i].DPS1.Mean
+}
+sort.Float64s(chardps)
+for i := range baseline.Characters {
+	for j := range chardps {
+		if baseline.CharDPS[i].DPS1.Mean == chardps[j] {
+			chars[j] = baseline.Characters[i].Name
+		}
+	}
+}*/
+
+func farmJSONs(domain int) {
+	for j := 0; j < artifarmsims; j++ {
 		artistartpos := strings.Index(good, "artifacts\"") + 12
 		newartis := ""
 		for i := 0; i < artifarmtime; i++ {
@@ -837,39 +994,22 @@ func farmartis(domain, t int, baseline jsondata) []float64 {
 		}
 		gojsondata := good[:artistartpos] + newartis + good[artistartpos:]
 
-		//ugly sorting code - sorts sim chars by dps, which is the order we should optimize them in (except this is a waste bc user has to specify anyway rn)
-		chars := []string{"", "", "", ""}
-		chardps := []float64{-1.0, -1.0, -1.0, -1.0}
-		for i := range baseline.CharDPS {
-			chardps[i] = baseline.CharDPS[i].DPS1.Mean
-		}
-		sort.Float64s(chardps)
-		for i := range baseline.Characters {
-			for j := range chardps {
-				if baseline.CharDPS[i].DPS1.Mean == chardps[j] {
-					chars[j] = baseline.Characters[i].Name
-				}
-			}
-		}
-
-		//fmt.Printf("here")
 		//fmt.Printf("./" + fmt.Sprintf("%0.f", float64(domain)) + "/gojson" + fmt.Sprintf("%.0f", float64(t)) + ".txt")
 		//os.WriteFile("./"+fmt.Sprintf("%0.f", float64(domain))+"/gojson"+fmt.Sprintf("%.0f", float64(t))+".txt", []byte(gojsondata), 0755)
-		os.WriteFile(fmt.Sprintf("%0.f", float64(domain))+"gojson"+fmt.Sprintf("%.0f", float64(t))+".txt", []byte(gojsondata), 0755)
-
-		//build := optimize(gojsondata, "kokomi")
-
-		//exec.Command("./GO", "-json", "GOdata.json").Output()
-		return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		os.WriteFile("./AutoGO/good/gojson"+fmt.Sprintf("%0.f", float64(j))+".json", []byte(gojsondata), 0755) //int->float->int shouldnt be necessary lol
 	}
-	return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 }
 
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame"}
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf"}
 
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti"}
+var simCharsID = []int{0, 1, 2, 3}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti"}
+
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
+var AGstatKeys = []string{"Atk", "n/a", "hp", "n/a", "Def", "n/a", "ele_mas", "EnergyRecharge", "CritRate", "CritDMG", "???", "pyro", "electro", "cryo", "hydro", "anemo", "geo", "physical"}
 var msv = []float64{311.0, 0.466, 4780, 0.466, -1, 0.583, 187, 0.518, 0.311, 0.622, 0.359, 0.466, 0.466, 0.466, 0.466, 0.466, 0.466, 0.583}
 
 //def% heal and phys might be wrong
@@ -887,6 +1027,16 @@ var ispct = []int{1, 100, 1, 100, 1, 100, 1, 100, 100, 100}
 	CR   float64
 	CD   float64
 }*/ //then: heal, pyro,electro,cryo,hydro,anemo,geo,phys
+
+func gcsimArtiName(abbr string) string {
+	for i, a := range artiabbrs {
+		if a == abbr {
+			return strings.ToLower(artinames[i])
+		}
+	}
+	fmt.Printf("arti abbreviation %v not recognized", abbr)
+	return ""
+}
 
 func randomGOarti(domain int) string {
 	arti := "{\"setKey\":\""
