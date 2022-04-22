@@ -676,16 +676,19 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 
 func makeNewLines(d, c int) string {
 	farmJSONs(d)
-	runAutoGO(c)
+	if c > 0 {
+		runAutoGO(c)
+	}
 	return parseAGresults(c)
 }
 
 func runAutoGO(c int) {
 	makeTemplate(c)
-	cmd := exec.Command("npm run start")
+	cmd := exec.Command("cmd", "/C", "npm run start")
+	//cmd := exec.Command("npm run start")
 	cmd.Dir = "./AutoGO"
-	out, err := cmd.Output()
-	fmt.Printf("%v", out)
+	err := cmd.Run()
+	//fmt.Printf("%v", out)
 	if err != nil {
 		fmt.Printf("%v", err)
 	}
@@ -693,7 +696,15 @@ func runAutoGO(c int) {
 }
 
 func makeTemplate(c int) {
-	exec.Command("node AutoGO/src/createTemplate.js " + GOchars[getCharID(optiorder[c])] + " tmpl").Output()
+	//exec.Command("node AutoGO/src/createTemplate.js " + GOchars[getCharID(optiorder[c])] + " tmpl").Output()
+	cmd := exec.Command("cmd", "/C", "node src/createTemplate.js "+GOchars[getCharID(optiorder[c])]+" tmpl good/gojson0.json")
+	//cmd := exec.Command("npm run start")
+	cmd.Dir = "./AutoGO"
+	err := cmd.Run()
+	//fmt.Printf("%v", out)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
 }
 
 func getCharID(name string) int {
@@ -712,7 +723,7 @@ type AGresult struct {
 }
 
 func parseAGresults(c int) string {
-	jsonData, err := os.ReadFile("./AutoGO/output/output.json")
+	jsonData, err := os.ReadFile("./AutoGO/output/tmpl.json")
 	if err != nil {
 		fmt.Printf("%v", err)
 	}
@@ -724,9 +735,9 @@ func parseAGresults(c int) string {
 
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	for i := range results { //ttl up all the arti sim iters
-		newsubs := getAGsubs(results[i].Data)
+		newsubs := getAGsubs(results[i].Data, results[i].User)
 		avgsubs = addsubs(avgsubs, newsubs)
-		deleteArtis(results[i].User, newsubs) //delete the artis chosen so that they're not selected again for another char
+		//deleteArtis(results[i].User, newsubs) //delete the artis chosen so that they're not selected again for another char
 	}
 
 	for i := range avgsubs { //complete the average
@@ -771,19 +782,19 @@ type GOarti struct {
 }
 
 func deleteArtis(file string, artistats []float64) {
-	f, err := os.ReadFile("./AutoGO/good/" + file + ".json")
+	f, err := os.ReadFile("./AutoGO/good/" + file)
 	if err != nil {
 		fmt.Printf("%v", err)
 	}
 	rawgood := string(f)
-	artisection := "{" + rawgood[strings.Index(rawgood, "artifacts\"")+10:strings.Index(rawgood, "weapons\"")] + "}"
+	artisection := "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "weapons\"")-2]
 	if strings.Contains(file, "gojson0") {
-		fmt.Printf("%v", artisection)
+		//fmt.Printf("%v", artisection)
 	}
 	var artis []GOarti
 	err = json.Unmarshal([]byte(artisection), &artis)
 	//asnowman := subsubs(ar)
-	found := 0
+	found := false
 	for i := range artis { //this currently works by looking for an arti with 3 stats = and 1 stat bigger (main stat), should be good enough?
 		toobig := 0
 		for j, s := range artis[i].Substats {
@@ -796,44 +807,55 @@ func deleteArtis(file string, artistats []float64) {
 				}
 			}
 			if j == 3 {
-				found++
+				found = true
 				artis[i] = artis[len(artis)-1]
 				artis = artis[:len(artis)-1]
 			}
 		}
-		if found >= 5 {
+		if found {
 			break
 		}
 	}
 
-	if found < 5 {
-		fmt.Printf("failed to delete artifact %v", artistats)
+	if !found {
+		fmt.Printf("failed to delete artifact %v,%v", artistats, err)
 	}
 
 	marsh, err := json.Marshal(artis)
 	newas := string(marsh)
-	newas = "[" + newas[1:len(newas)-1] + "]"
-	newgood := rawgood[:strings.Index(rawgood, "artifacts\"")+10] + newas + rawgood[strings.Index(rawgood, "weapons\""):]
-	os.WriteFile("./AutoGO/good/"+file+".json", []byte(newgood), 0755)
+	newas = newas[1:len(newas)-1] + "]"
+	newgood := rawgood[:strings.Index(rawgood, "artifacts\"")+12] + newas + rawgood[strings.Index(rawgood, "weapons\"")-2:]
+	os.WriteFile("./AutoGO/good/"+file, []byte(newgood), 0755)
 }
 
-func getAGsubs(raw string) []float64 {
+func getAGsubs(raw, file string) []float64 {
 	subs := newsubs()
 	artis := strings.Split(raw, "|")
 	for _, a := range artis {
 		if a == "" {
 			continue
 		}
+		asubs := newsubs()
 		stats := strings.Split(a, "~")
 		for _, s := range stats {
 			if s == "" {
 				continue
 			}
-			stattype := s[:strings.Index(s, "=")+1]
+			stattype := s[:strings.Index(s, "=")]
 			val := s[strings.Index(s, "=")+1:]
-			parse, _ := strconv.ParseFloat(val, 64)
-			subs[AGstatid(stattype, val)] += parse
+			ispt := false
+			if strings.Contains(val, "%") {
+				val = val[:len(val)-1]
+				ispt = true
+			}
+			parse, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+			asubs[AGstatid(stattype, ispt)] += parse
 		}
+		deleteArtis(file, asubs) //delete the artis chosen so that they're not selected again for another char
+		subs = addsubs(subs, asubs)
 	}
 	return subs
 }
@@ -842,10 +864,10 @@ func newsubs() []float64 { //empty stat array
 	return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 }
 
-func AGstatid(key, val string) int {
+func AGstatid(key string, ispt bool) int {
 	for i, k := range AGstatKeys {
 		if k == key {
-			if i < 6 && strings.Contains(val, "%") {
+			if i < 6 && ispt {
 				return i + 1 //the key for flat vs % hp, atk and def is the same, so we have to look at the value
 			}
 			return i
@@ -891,7 +913,7 @@ func simartiupgrades(cursubs []float64, domain, line int, baseline jsondata) str
 	}
 	//fmt.Printf("%v%v", chr, line)
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	if step1 {
+	if false {
 		for i := 0; i < artifarmsims; i++ {
 			//avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, i, baseline), cursubs))
 		}
@@ -1003,9 +1025,9 @@ func farmJSONs(domain int) {
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame"}
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf"}
 
-var simChars = []string{"ganyu", "rosaria", "kokomi", "venti"}
-var simCharsID = []int{0, 1, 2, 3}
-var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti"}
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}

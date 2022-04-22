@@ -1,10 +1,6 @@
 {
     "templates": [
-        "templates/kazuha-er-em.json",
-        "templates/hutao-ca-homa-sronly.json",
-        "templates/hutao-ca-dm-sronly.json",
-        "templates/hutao-ca-dbane-sronly.json",
-        "templates/ganyutest.json"
+        "templates/tmpl.json"
     ],
-    "onlyNew": true
+    "onlyNew": false
 }
