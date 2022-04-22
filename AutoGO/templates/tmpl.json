@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Ganyu",
+  "char": "Mona",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,42 +8,38 @@
     "version": 1,
     "characters": [
       {
-        "key": "Ganyu",
-        "level": 90,
-        "ascension": 6,
+        "key": "Mona",
+        "level": 70,
+        "ascension": 5,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "Ganyu": {
-            "A1": "on",
-            "A4": "on"
+          "NoblesseOblige": {},
+          "Mona": {
+            "Omen": "on",
+            "ProphecyOfSubmersion": "on",
+            "ProphecyOfOblivion": "on"
           },
-          "BlizzardStrayer": {
-            "state": "frozen"
+          "ThrillingTalesOfDragonSlayers": {
+            "Heritage": "on"
           },
-          "PrototypeCrescent": {
-            "Unreturning": "on"
-          },
-          "resonance": {
-            "ShatteringIce": "on"
+          "PrototypeAmber": {
+            "Gliding": "on"
           }
         },
-        "bonusStats": {
-          "critRate_": 15,
-          "atk_": 20
-        },
+        "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 10,
-          "skill": 9,
-          "burst": 10
+          "auto": 1,
+          "skill": 6,
+          "burst": 8
         },
         "infusionAura": "",
-        "constellation": 0,
+        "constellation": 3,
         "buildSettings": {
           "setFilters": [
             {
-              "key": "BlizzardStrayer",
+              "key": "NoblesseOblige",
               "num": 4
             },
             {
@@ -55,25 +51,19 @@
               "num": 0
             }
           ],
-          "statFilters": {
-            "enerRech_": 120
-          },
+          "statFilters": {},
           "mainStatKeys": {
             "sands": [
-              "atk_"
+              "enerRech_"
             ],
-            "goblet": [
-              "cryo_dmg_"
-            ],
+            "goblet": [],
             "circlet": [
-              "critRate_",
-              "critDMG_",
-              "atk_"
+              "heal_"
             ]
           },
           "optimizationTarget": [
-            "burst",
-            "dmg"
+            "basic",
+            "enerRech_"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -81,14 +71,14 @@
           "builds": [],
           "buildDate": 0,
           "maxBuildsToShow": 1,
-          "plotBase": "enerRech_",
+          "plotBase": "",
           "compareBuild": true,
           "levelLow": 0,
           "levelHigh": 20
         },
         "team": [
           "KamisatoAyaka",
-          "Mona",
+          "Ganyu",
           "Venti"
         ],
         "compareData": false,
@@ -97,11 +87,11 @@
     ],
     "weapons": [
       {
-        "key": "SkywardHarp",
-        "level": 90,
-        "ascension": 6,
-        "refinement": 1,
-        "location": "Ganyu",
+        "key": "PrototypeAmber",
+        "level": 40,
+        "ascension": 1,
+        "refinement": 5,
+        "location": "Mona",
         "lock": true
       }
     ]

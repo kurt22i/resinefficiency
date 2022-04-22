@@ -40,6 +40,7 @@ var manualOverride = ""
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
+	flag.IntVar(&artifarmsims, "a", -1, "how many artifacts to farm")
 	//flag.BoolVar(&step1, "p1", false, "generate artis")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
 	flag.StringVar(&domstring, "d", "", "domains to farm")
@@ -657,12 +658,12 @@ type subrolls struct {
 func runArtifactTest(t test, config string) (c string) { //params for artifact test: 0: domainid
 	lines := strings.Split(config, "\n")
 
-	for _, l := range lines { //remove all set and stats lines
-		if strings.Contains(l, "add stats") { //|| strings.Contains(l, "add set") {
-			l = ""
-		} else if strings.Contains(l, "add stats") {
-			if strings.Contains(manualOverride, l[:strings.Index(l, " ")]) {
-				l = ""
+	for i := range lines { //remove all set and stats lines
+		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
+			lines[i] = ""
+		} else if strings.Contains(lines[i], "add sets") {
+			if strings.Contains(manualOverride, lines[i][:strings.Index(lines[i], " ")]) {
+				lines[i] = ""
 			}
 		}
 	}
@@ -676,9 +677,7 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 
 func makeNewLines(d, c int) string {
 	farmJSONs(d)
-	if c > 0 {
-		runAutoGO(c)
-	}
+	runAutoGO(c)
 	return parseAGresults(c)
 }
 
@@ -692,7 +691,7 @@ func runAutoGO(c int) {
 	if err != nil {
 		fmt.Printf("%v", err)
 	}
-	bufio.NewReader(os.Stdin).ReadBytes('\n') //wait for the user to signify autogo is done by pressing enter
+	//bufio.NewReader(os.Stdin).ReadBytes('\n') //wait for the user to signify autogo is done by pressing enter
 }
 
 func makeTemplate(c int) {
@@ -733,15 +732,17 @@ func parseAGresults(c int) string {
 		fmt.Printf("%v", err)
 	}
 
-	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	avgsubs := newsubs()
 	for i := range results { //ttl up all the arti sim iters
 		newsubs := getAGsubs(results[i].Data, results[i].User)
+		//fmt.Printf("%v", newsubs)
 		avgsubs = addsubs(avgsubs, newsubs)
 		//deleteArtis(results[i].User, newsubs) //delete the artis chosen so that they're not selected again for another char
 	}
 
 	for i := range avgsubs { //complete the average
 		avgsubs[i] /= float64(len(results))
+		avgsubs[i] /= float64(ispct[i])
 	}
 
 	newlines := ""
@@ -973,7 +974,6 @@ func simartiupgrades(cursubs []float64, domain, line int, baseline jsondata) str
 			fmt.Printf("%v", err)
 		}
 		for i := range avgsubs {
-			//avgsubs[i] /= float64(artisims)
 			avgsubs[i] /= float64(count)
 		}
 	}
@@ -1031,11 +1031,9 @@ var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "Kamisa
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
-var AGstatKeys = []string{"Atk", "n/a", "hp", "n/a", "Def", "n/a", "ele_mas", "EnergyRecharge", "CritRate", "CritDMG", "???", "pyro", "electro", "cryo", "hydro", "anemo", "geo", "physical"}
-var msv = []float64{311.0, 0.466, 4780, 0.466, -1, 0.583, 187, 0.518, 0.311, 0.622, 0.359, 0.466, 0.466, 0.466, 0.466, 0.466, 0.466, 0.583}
-
-//def% heal and phys might be wrong
-var ispct = []int{1, 100, 1, 100, 1, 100, 1, 100, 100, 100}
+var AGstatKeys = []string{"Atk", "n/a", "hp", "n/a", "Def", "n/a", "ele_mas", "EnergyRecharge", "CritRate", "CritDMG", "HealingBonus", "pyro", "electro", "cryo", "hydro", "anemo", "geo", "physical"}
+var msv = []float64{311.0, 0.466, 4780, 0.466, -1, 0.583, 187, 0.518, 0.311, 0.622, 0.359, 0.466, 0.466, 0.466, 0.466, 0.466, 0.466, 0.583} //def% heal and phys might be wrong
+var ispct = []int{1, 100, 1, 100, 1, 100, 1, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100}
 
 /*type subrolls struct {
 	Atk  float64
@@ -1096,16 +1094,24 @@ func randomGOarti(domain int) string {
 var standards = []float64{16.54, 0.0496, 253.94, 0.0496, 19.68, 0.062, 19.82, 0.0551, 0.0331, 0.0662}
 
 func torolls(subs []float64) string {
-	str := "atk=" + fmt.Sprintf("%f", standards[0]*subs[0])
-	str += " atk%=" + fmt.Sprintf("%f", standards[1]*subs[1])
-	str += " hp=" + fmt.Sprintf("%f", standards[2]*subs[2])
-	str += " hp%=" + fmt.Sprintf("%f", standards[3]*subs[3])
-	str += " def=" + fmt.Sprintf("%f", standards[4]*subs[4])
-	str += " def%=" + fmt.Sprintf("%f", standards[5]*subs[5])
-	str += " em=" + fmt.Sprintf("%f", standards[6]*subs[6])
-	str += " er=" + fmt.Sprintf("%f", standards[7]*subs[7])
-	str += " cr=" + fmt.Sprintf("%f", standards[8]*subs[8])
-	str += " cd=" + fmt.Sprintf("%f", standards[9]*subs[9])
+	str := "atk=" + fmt.Sprintf("%f", subs[0])
+	str += " atk%=" + fmt.Sprintf("%f", subs[1])
+	str += " hp=" + fmt.Sprintf("%f", subs[2])
+	str += " hp%=" + fmt.Sprintf("%f", subs[3])
+	str += " def=" + fmt.Sprintf("%f", subs[4])
+	str += " def%=" + fmt.Sprintf("%f", subs[5])
+	str += " em=" + fmt.Sprintf("%f", subs[6])
+	str += " er=" + fmt.Sprintf("%f", subs[7])
+	str += " cr=" + fmt.Sprintf("%f", subs[8])
+	str += " cd=" + fmt.Sprintf("%f", subs[9])
+	str += " heal=" + fmt.Sprintf("%f", subs[10])
+	str += " pyro%=" + fmt.Sprintf("%f", subs[11])
+	str += " electro%=" + fmt.Sprintf("%f", subs[12])
+	str += " cryo%=" + fmt.Sprintf("%f", subs[13])
+	str += " hydro%=" + fmt.Sprintf("%f", subs[14])
+	str += " anemo%=" + fmt.Sprintf("%f", subs[15])
+	str += " geo%=" + fmt.Sprintf("%f", subs[16])
+	str += " phys%=" + fmt.Sprintf("%f", subs[17])
 	return str
 }
 
@@ -1131,7 +1137,7 @@ func remove8(subs []float64) []float64 {
 }
 
 func addsubs(s1, s2 []float64) []float64 {
-	add := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	add := newsubs()
 	for i := range add {
 		add[i] = s1[i] + s2[i]
 	}
