@@ -182,6 +182,7 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 		} else if c.Weapon.Level < 90 { //levelup and ascension test
 			newmax -= 10
 			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
+			newlevel -= 10
 		}
 		if c.Weapon.MaxLvl < 90 { //ascension test
 			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
@@ -644,14 +645,19 @@ func runArtifactTest(t test, config string, baseline jsondata) (c string) { //pa
 	//for count <= t.params[0]*2+1 {
 	for count < 1 { //we will be replacing all char's artis now, this needs to be implemented
 		curline++
+		if strings.Contains(lines[curline], "ganyu add set") {
+			lines[curline] = "ganyu add set=\"blizzardstrayer\" count=4;"
+		}
 		if strings.Contains(lines[curline], "ganyu add stats def") {
 			count++
 		}
 	}
-
-	newline := lines[curline][0:strings.Index(lines[curline], "add stats")+9] + " "
-	newline += simartiupgrades(getrolls(lines[curline]), t.params[0], baseline) + ";"
-	lines[curline] = newline
+	changelines := []int{3, 8}
+	for _, l := range changelines {
+		newline := lines[l][0:strings.Index(lines[l], "add stats")+9] + " "
+		newline += simartiupgrades(getrolls(lines[l]), t.params[0], l, baseline) + "cryo%=0.466;"
+		lines[l] = newline
+	}
 
 	return strings.Join(lines, "\n")
 }
@@ -735,65 +741,80 @@ func getrolls(str string) []float64 {
 	return rolls
 }
 
-func simartiupgrades(cursubs []float64, domain int, baseline jsondata) string {
+func simartiupgrades(cursubs []float64, domain, line int, baseline jsondata) string {
 
+	chr := "Ganyu"
+	if line == 8 {
+		chr = "KamisatoAyaka"
+	}
+	//fmt.Printf("%v%v", chr, line)
 	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	//for i := 0; i < artifarmsims; i++ {
-	//	avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, i, baseline), cursubs))
-	//}
-	count := 0
-	err := filepath.Walk("./use", func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			return nil
+	if step1 {
+		for i := 0; i < artifarmsims; i++ {
+			avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, i, baseline), cursubs))
 		}
-		//fmt.Printf("here")
-		file, err3 := os.ReadFile(path)
-		count++
-		if err3 != nil {
-			return errors.Wrap(err3, "")
+		for i := range avgsubs {
+			avgsubs[i] /= float64(artifarmsims)
 		}
-		//fmt.Printf("here")
-		strfile := string(file)
-		for i := 0; i < 5; i++ {
-			strfile = strfile[strings.Index(strfile, "location\":\"Ganyu")-250:]
-			strfile = strfile[strings.Index(strfile, "mainStatKey")+14:]
-			msk := strfile[:strings.Index(strfile, "\"")]
-			if getStatID(msk) < 10 {
-				//fmt.Printf("%v\n", avgsubs)
-				avgsubs[getStatID(msk)] += msv[getStatID(msk)] / standards[getStatID(msk)]
-				//fmt.Printf("%v\n", avgsubs)
+	} else {
+		count := 0
+		err := filepath.Walk("./use", func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
 			}
-			for j := 0; j < 4; j++ {
-				strfile = strfile[strings.Index(strfile, "key")+6:]
-				ssk := strfile[:strings.Index(strfile, "\"")]
-				//fmt.Printf("%v", ssk)
-				strfile = strfile[strings.Index(strfile, "value")+7:]
-				ssv := strfile[:strings.Index(strfile, "}")]
-				//fmt.Printf("%v", ssv)
-				ssvv, err2 := strconv.ParseFloat(ssv, 64)
-				if err2 != nil {
-					return errors.Wrap(err2, "")
+			//fmt.Printf("here")
+			file, err3 := os.ReadFile(path)
+			count++
+			if err3 != nil {
+				return errors.Wrap(err3, "")
+			}
+			//fmt.Printf(path)
+			strfile := string(file)
+			//fmt.Printf("%v", strings.Index(strfile, "location\":\""+chr))
+			//fmt.Printf("%v", strings.Index(strfile, "location\":\""+chr)-250)
+			for i := 0; i < 5; i++ {
+				//fmt.Printf("\n%v", i)
+				//fmt.Printf("\n%v", strings.Index(strfile, "location\":\""+chr))
+				//fmt.Printf("\n%v", strings.Index(strfile, "location\":\""+chr)-250)
+				strfile = strfile[strings.Index(strfile, "location\":\""+chr)-250:]
+				strfile = strfile[strings.Index(strfile, "mainStatKey")+14:]
+				msk := strfile[:strings.Index(strfile, "\"")]
+				if getStatID(msk) < 10 {
+					//fmt.Printf("%v\n", avgsubs)
+					avgsubs[getStatID(msk)] += msv[getStatID(msk)] / standards[getStatID(msk)]
+					//fmt.Printf("%v\n", avgsubs)
 				}
-				avgsubs[getStatID(ssk)] += ssvv / standards[getStatID(ssk)] / float64(ispct[getStatID(ssk)])
+				for j := 0; j < 4; j++ {
+					strfile = strfile[strings.Index(strfile, "key")+6:]
+					ssk := strfile[:strings.Index(strfile, "\"")]
+					//fmt.Printf("%v", ssk)
+					strfile = strfile[strings.Index(strfile, "value")+7:]
+					ssv := strfile[:strings.Index(strfile, "}")]
+					//fmt.Printf("%v", ssv)
+					ssvv, err2 := strconv.ParseFloat(ssv, 64)
+					if err2 != nil {
+						return errors.Wrap(err2, "")
+					}
+					avgsubs[getStatID(ssk)] += ssvv / standards[getStatID(ssk)] / float64(ispct[getStatID(ssk)])
+				}
+				strfile = strfile[20:]
 			}
-			strfile = strfile[100:]
+			//fmt.Printf("%v\n", avgsubs)
+			avgsubs = subsubs(avgsubs, cursubs)
+
+			return nil
+		})
+
+		if err != nil {
+			fmt.Printf("%v", err)
 		}
-		//fmt.Printf("%v", avgsubs)
-		avgsubs = subsubs(avgsubs, cursubs)
-
-		return nil
-	})
-
-	if err != nil {
-		fmt.Printf("%v", err)
+		for i := range avgsubs {
+			//avgsubs[i] /= float64(artisims)
+			avgsubs[i] /= float64(count)
+		}
 	}
 
-	//fmt.Printf("%v", avgsubs)
-	for i := range avgsubs {
-		//avgsubs[i] /= float64(artisims)
-		avgsubs[i] /= float64(count)
-	}
-	fmt.Printf("%v", avgsubs)
+	//fmt.Printf("%v\n", avgsubs)
 	return torolls(addsubs(cursubs, avgsubs))
 }
 
@@ -831,7 +852,7 @@ func farmartis(domain, t int, baseline jsondata) []float64 {
 			}
 		}
 
-		fmt.Printf("here")
+		//fmt.Printf("here")
 		//fmt.Printf("./" + fmt.Sprintf("%0.f", float64(domain)) + "/gojson" + fmt.Sprintf("%.0f", float64(t)) + ".txt")
 		//os.WriteFile("./"+fmt.Sprintf("%0.f", float64(domain))+"/gojson"+fmt.Sprintf("%.0f", float64(t))+".txt", []byte(gojsondata), 0755)
 		os.WriteFile(fmt.Sprintf("%0.f", float64(domain))+"gojson"+fmt.Sprintf("%.0f", float64(t))+".txt", []byte(gojsondata), 0755)
