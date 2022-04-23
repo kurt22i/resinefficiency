@@ -676,7 +676,7 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 			}
 			lines[i] = ""
 		} else if strings.Contains(lines[i], "add sets") {
-			if strings.Contains(manualOverride, lines[i][:strings.Index(lines[i], " ")]) {
+			if strings.Contains(manualOverride, lines[i][:strings.Index(lines[i], " ")-1]) {
 				lines[i] = ""
 			}
 		}
@@ -775,7 +775,7 @@ func parseAGresults(c int) string {
 	if strings.Contains(manualOverride, optiorder[c]) {
 		override := manualOverride[strings.Index(manualOverride, optiorder[c]):]
 		if strings.Contains(override, ",") {
-			override = override[:strings.Index(override, ",")-1]
+			override = override[:strings.Index(override, ",")]
 		}
 		if strings.Contains(override, "4") {
 			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "4")+1:]) + "\" count=4;\n"
@@ -822,7 +822,7 @@ func deleteArtis(file string, artistats []float64) {
 	for i := range artis { //this currently works by looking for an arti with 3 stats = and 1 stat bigger (main stat), should be good enough?
 		toobig := 0
 		for j, s := range artis[i].Substats {
-			if artistats[getStatID(s.Key)] < s.Value {
+			if s.Key == "" || artistats[getStatID(s.Key)] < s.Value {
 				break
 			} else if artistats[getStatID(s.Key)] > s.Value {
 				toobig++
