@@ -37,15 +37,20 @@ var good string
 var domstring = ""
 var optiorder = []string{"ph0", "ph1", "ph2", "ph3"} //the order in which to optimize the characters
 var manualOverride = ""
+var noartis []string //chars to not optimize artis for
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
-	flag.IntVar(&artifarmsims, "a", -1, "how many artifacts to farm")
+	flag.IntVar(&artifarmsims, "a", -1, "how many artifact trials to do")
 	//flag.BoolVar(&step1, "p1", false, "generate artis")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
 	flag.StringVar(&domstring, "d", "", "domains to farm")
 	flag.StringVar(&manualOverride, "mo", "", "override which artis to sim the result sims with, used when changing sets")
+	var na = ""
+	flag.StringVar(&na, "na", "", "chars to skip optimizing for")
 	flag.Parse()
+
+	noartis = strings.Split(na, ",")
 
 	if artifarmsims == -1 {
 		artifarmsims = 10000 / artifarmtime
@@ -660,6 +665,15 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 
 	for i := range lines { //remove all set and stats lines
 		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
+			skip := false //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
+			for j := range noartis {
+				if strings.Contains(lines[i], noartis[j]) {
+					skip = true
+				}
+			}
+			if skip {
+				continue
+			}
 			lines[i] = ""
 		} else if strings.Contains(lines[i], "add sets") {
 			if strings.Contains(manualOverride, lines[i][:strings.Index(lines[i], " ")]) {
@@ -668,15 +682,24 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 		}
 	}
 
+	farmJSONs(t.params[0])
 	for i := range optiorder {
-		lines = append(lines, makeNewLines(t.params[0], i))
+		skip := false //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
+		for j := range noartis {
+			if strings.Contains(optiorder[i], noartis[j]) {
+				skip = true
+			}
+		}
+		if skip {
+			continue
+		}
+		lines = append(lines, makeNewLines(i))
 	}
 
 	return strings.Join(lines, "\n")
 }
 
-func makeNewLines(d, c int) string {
-	farmJSONs(d)
+func makeNewLines(c int) string {
 	runAutoGO(c)
 	return parseAGresults(c)
 }
@@ -735,7 +758,7 @@ func parseAGresults(c int) string {
 	avgsubs := newsubs()
 	for i := range results { //ttl up all the arti sim iters
 		newsubs := getAGsubs(results[i].Data, results[i].User)
-		//fmt.Printf("%v", newsubs)
+		//fmt.Printf("\n%v", newsubs)
 		avgsubs = addsubs(avgsubs, newsubs)
 		//deleteArtis(results[i].User, newsubs) //delete the artis chosen so that they're not selected again for another char
 	}
@@ -809,6 +832,7 @@ func deleteArtis(file string, artistats []float64) {
 			}
 			if j == 3 {
 				found = true
+				//fmt.Printf("\n%v", artis[i])
 				artis[i] = artis[len(artis)-1]
 				artis = artis[:len(artis)-1]
 			}
@@ -823,14 +847,21 @@ func deleteArtis(file string, artistats []float64) {
 	}
 
 	marsh, err := json.Marshal(artis)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
 	newas := string(marsh)
 	newas = newas[1:len(newas)-1] + "]"
 	newgood := rawgood[:strings.Index(rawgood, "artifacts\"")+12] + newas + rawgood[strings.Index(rawgood, "weapons\"")-2:]
-	os.WriteFile("./AutoGO/good/"+file, []byte(newgood), 0755)
+	err = os.WriteFile("./AutoGO/good/"+file, []byte(newgood), 0755)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
 }
 
 func getAGsubs(raw, file string) []float64 {
 	subs := newsubs()
+	//fmt.Printf("%v", raw)
 	artis := strings.Split(raw, "|")
 	for _, a := range artis {
 		if a == "" {

@@ -43,7 +43,7 @@ async function run() {
 
         // Force certain settings
         x.buildSettings.useExcludedArts = false
-        x.buildSettings.useEquippedArts = false
+        x.buildSettings.useEquippedArts = true
         x.buildSettings.builds = []
         x.buildSettings.buildDate = 0
         x.buildSettings.maxBuildsToShow = 1
