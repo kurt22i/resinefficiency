@@ -59,13 +59,13 @@ async function run() {
                 var str = ""
                 for (let i=0;i<5;i++) {//each artifact
 //document.querySelector("")
-                    const artitype = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1gv0prw > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.grad-5star.MuiBox-root.css-1fm09i6 > h6`)
+                    const artitype = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1gv0prw > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.grad-5star.MuiBox-root.css-14ua1gi > div.MuiChip-root.MuiChip-filled.MuiChip-sizeSmall.MuiChip-colorDefault.MuiChip-filledDefault.css-dttlzh > span > h6`)
                     var raw = await (await artitype.getProperty("innerHTML")).jsonValue()
                     raw = raw.substring(raw.indexOf("icon=")+6)
                     str += raw.substring(0, raw.indexOf("\"")) + "="
                     str += await (await artitype.getProperty("innerText")).jsonValue() + "~"
                     for (let j=0;j<4;j++) {//substats
-                        const substat = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1gv0prw > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.MuiBox-root.css-11yya3r > div:nth-child(${j+1})`)
+                        const substat = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1gv0prw > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.MuiBox-root.css-11yya3r > div:nth-child(${j+1}) > span`)
                         var raw = await (await substat.getProperty("innerHTML")).jsonValue()
                         raw = raw.substring(raw.indexOf("icon=")+6)
                         str += raw.substring(0, raw.indexOf("\"")) + "="

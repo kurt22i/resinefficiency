@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Ganyu",
+  "char": "Venti",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,41 +8,32 @@
     "version": 1,
     "characters": [
       {
-        "key": "Ganyu",
-        "level": 80,
-        "ascension": 6,
+        "key": "Venti",
+        "level": 60,
+        "ascension": 4,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "AmosBow": {
-            "StrongWilled": "3"
+          "ViridescentVenerer": {
+            "swirlcryo": "swirl"
           },
-          "resonance": {
-            "ShatteringIce": "on"
-          },
-          "Ganyu": {
-            "A4": "on",
-            "A1": "on"
-          },
-          "BlizzardStrayer": {
-            "state": "frozen"
+          "Venti": {
+            "burstAbsorption": "cryo"
           }
         },
-        "bonusStats": {
-          "atk_": 40
-        },
+        "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 8,
-          "skill": 5,
-          "burst": 7
+          "auto": 1,
+          "skill": 1,
+          "burst": 1
         },
         "infusionAura": "",
         "constellation": 0,
         "buildSettings": {
           "setFilters": [
             {
-              "key": "BlizzardStrayer",
+              "key": "ViridescentVenerer",
               "num": 4
             },
             {
@@ -55,25 +46,16 @@
             }
           ],
           "statFilters": {
-            "enerRech_": 110
+            "enerRech_": 190
           },
           "mainStatKeys": {
-            "sands": [
-              "atk_"
-            ],
-            "goblet": [
-              "cryo_dmg_",
-              "atk_"
-            ],
-            "circlet": [
-              "critRate_",
-              "atk_",
-              "critDMG_"
-            ]
+            "sands": [],
+            "goblet": [],
+            "circlet": []
           },
           "optimizationTarget": [
-            "charged",
-            "frostflakeBloom"
+            "burst",
+            "full14"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -88,8 +70,8 @@
         },
         "team": [
           "KamisatoAyaka",
-          "SangonomiyaKokomi",
-          "Venti"
+          "Ganyu",
+          "SangonomiyaKokomi"
         ],
         "compareData": true,
         "favorite": false
@@ -97,11 +79,11 @@
     ],
     "weapons": [
       {
-        "key": "AmosBow",
-        "level": 84,
-        "ascension": 6,
+        "key": "FavoniusWarbow",
+        "level": 70,
+        "ascension": 5,
         "refinement": 1,
-        "location": "Ganyu",
+        "location": "Venti",
         "lock": true
       }
     ]

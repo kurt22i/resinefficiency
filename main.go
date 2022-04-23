@@ -128,12 +128,12 @@ func processdomstring() { //this is ugly
 	domains = strings.Split(domstring, ",")
 	for i := range domains {
 		if strings.Contains(domains[i], "(") {
-			doartisfor := domains[i][strings.Index(domains[i], "(")+1:]
+			doartisfor := domains[i][strings.Index(domains[i], "(")+1 : len(domains[i])-1]
 			domains[i] = domains[i][:strings.Index(domains[i], "(")]
 			settings := ""
 			if strings.Contains(doartisfor, "|") {
-				doartisfor = doartisfor[:strings.Index(doartisfor, "|")]
 				settings = doartisfor[strings.Index(doartisfor, "|")+1:]
+				doartisfor = doartisfor[:strings.Index(doartisfor, "|")]
 			}
 			manualOverride[i] = settings
 			optifor[i] = doartisfor
@@ -195,9 +195,6 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 		if newmax < 40 {
 			newmax = 40 //could just do this with math.max, but it require floats for some reason
 		}
-		if newmax > 90 {
-			newmax = 90
-		}
 		if newlevel > 90 {
 			newlevel = 90
 		}
@@ -221,8 +218,8 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 	if domains[0] == "" { //if the user didnt specify, farm the sim domains
 		//todo
 	} else {
-		for _, d := range domains {
-			tests = append(tests, test{"artifact", []int{domainid(d)}})
+		for i, d := range domains {
+			tests = append(tests, test{"artifact", []int{domainid(d), i}})
 		}
 	}
 
@@ -788,6 +785,7 @@ func parseAGresults(c, d int) string {
 	//we really should count how many arti sims use each set bonus combo, and run sims for each of them (numsims = numregularsims(10000 usually) * % of trials that had this set bonus combo), then avg results..
 	//but for now... manual overrides when switching sets
 	if strings.Contains(manualOverride[d], optiorder[c]) {
+		//fmt.Printf("mo%v,oo%v", manualOverride[d], optiorder[c])
 		override := manualOverride[d][strings.Index(manualOverride[d], optiorder[c]):]
 		if strings.Contains(override, "&") {
 			override = override[:strings.Index(override, "&")]
@@ -1054,7 +1052,11 @@ for i := range baseline.Characters {
 }*/
 
 func farmJSONs(domain int) {
-	files, _ := filepath.Glob("/AutoGO/good/gojson*")
+	files, err := filepath.Glob("./AutoGO/good/gojson*")
+
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
 	for _, f := range files {
 		os.Remove(f)
 	}
