@@ -36,8 +36,8 @@ var godatafile = "GOdata.txt" //filename of the GO data that will be used for we
 var good string
 var domstring = ""
 var optiorder = []string{"ph0", "ph1", "ph2", "ph3"} //the order in which to optimize the characters
-var manualOverride = ""
-var noartis []string //chars to not optimize artis for
+var manualOverride = []string{"", "", "", ""}
+var optifor = []string{"", "", "", ""} //chars to not optimize artis for
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
@@ -45,12 +45,12 @@ func main() {
 	//flag.BoolVar(&step1, "p1", false, "generate artis")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
 	flag.StringVar(&domstring, "d", "", "domains to farm")
-	flag.StringVar(&manualOverride, "mo", "", "override which artis to sim the result sims with, used when changing sets")
-	var na = ""
-	flag.StringVar(&na, "na", "", "chars to skip optimizing for")
+	//flag.StringVar(&manualOverride, "mo", "", "override which artis to sim the result sims with, used when changing sets")
+	//var na = ""
+	//flag.StringVar(&na, "na", "", "chars to skip optimizing for")
 	flag.Parse()
 
-	noartis = strings.Split(na, ",")
+	//noartis = strings.Split(na, ",")
 
 	if artifarmsims == -1 {
 		artifarmsims = 10000 / artifarmtime
@@ -60,8 +60,10 @@ func main() {
 		//refsimdomains
 		domains = []string{""}
 	} else {
-		domains = strings.Split(domstring, ",")
+		//domains = strings.Split(domstring, ",")
+		processdomstring()
 	}
+
 	good2, err2 := os.ReadFile(godatafile)
 	good = string(good2)
 
@@ -120,6 +122,23 @@ func run() error {
 	}
 
 	return nil
+}
+
+func processdomstring() { //this is ugly
+	domains = strings.Split(domstring, ",")
+	for i := range domains {
+		if strings.Contains(domains[i], "(") {
+			doartisfor := domains[i][strings.Index(domains[i], "(")+1:]
+			domains[i] = domains[i][:strings.Index(domains[i], "(")]
+			settings := ""
+			if strings.Contains(doartisfor, "|") {
+				doartisfor = doartisfor[:strings.Index(doartisfor, "|")]
+				settings = doartisfor[strings.Index(doartisfor, "|")+1:]
+			}
+			manualOverride[i] = settings
+			optifor[i] = doartisfor
+		}
+	}
 }
 
 func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talents that are not used in the config
@@ -660,23 +679,21 @@ type subrolls struct {
 	CD   float64
 }
 
-func runArtifactTest(t test, config string) (c string) { //params for artifact test: 0: domainid
+func runArtifactTest(t test, config string) (c string) { //params for artifact test: 0: domainid, 1: position in domain q
 	lines := strings.Split(config, "\n")
 
 	for i := range lines { //remove all set and stats lines
 		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
-			skip := false //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
-			for j := range noartis {
-				if strings.Contains(lines[i], noartis[j]) {
-					skip = true
-				}
+			skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
+			if strings.Contains(optifor[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) || optifor[t.params[1]] == "" {
+				skip = false
 			}
 			if skip {
 				continue
 			}
 			lines[i] = ""
-		} else if strings.Contains(lines[i], "add sets") {
-			if strings.Contains(manualOverride, lines[i][:strings.Index(lines[i], " ")-1]) {
+		} else if strings.Contains(lines[i], "add set") {
+			if strings.Contains(manualOverride[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) {
 				lines[i] = ""
 			}
 		}
@@ -684,24 +701,22 @@ func runArtifactTest(t test, config string) (c string) { //params for artifact t
 
 	farmJSONs(t.params[0])
 	for i := range optiorder {
-		skip := false //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
-		for j := range noartis {
-			if strings.Contains(optiorder[i], noartis[j]) {
-				skip = true
-			}
+		skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
+		if strings.Contains(optifor[t.params[1]], optiorder[i]) || optifor[t.params[1]] == "" {
+			skip = false
 		}
 		if skip {
 			continue
 		}
-		lines = append(lines, makeNewLines(i))
+		lines = append(lines, makeNewLines(i, t.params[1]))
 	}
 
 	return strings.Join(lines, "\n")
 }
 
-func makeNewLines(c int) string {
+func makeNewLines(c, d int) string {
 	runAutoGO(c)
-	return parseAGresults(c)
+	return parseAGresults(c, d)
 }
 
 func runAutoGO(c int) {
@@ -744,7 +759,7 @@ type AGresult struct {
 	Data string `json:"data"`
 }
 
-func parseAGresults(c int) string {
+func parseAGresults(c, d int) string {
 	jsonData, err := os.ReadFile("./AutoGO/output/tmpl.json")
 	if err != nil {
 		fmt.Printf("%v", err)
@@ -772,10 +787,10 @@ func parseAGresults(c int) string {
 
 	//we really should count how many arti sims use each set bonus combo, and run sims for each of them (numsims = numregularsims(10000 usually) * % of trials that had this set bonus combo), then avg results..
 	//but for now... manual overrides when switching sets
-	if strings.Contains(manualOverride, optiorder[c]) {
-		override := manualOverride[strings.Index(manualOverride, optiorder[c]):]
-		if strings.Contains(override, ",") {
-			override = override[:strings.Index(override, ",")]
+	if strings.Contains(manualOverride[d], optiorder[c]) {
+		override := manualOverride[d][strings.Index(manualOverride[d], optiorder[c]):]
+		if strings.Contains(override, "&") {
+			override = override[:strings.Index(override, "&")]
 		}
 		if strings.Contains(override, "4") {
 			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "4")+1:]) + "\" count=4;\n"
@@ -1039,6 +1054,10 @@ for i := range baseline.Characters {
 }*/
 
 func farmJSONs(domain int) {
+	files, _ := filepath.Glob("/AutoGO/good/gojson*")
+	for _, f := range files {
+		os.Remove(f)
+	}
 	for j := 0; j < artifarmsims; j++ {
 		artistartpos := strings.Index(good, "artifacts\"") + 12
 		newartis := ""

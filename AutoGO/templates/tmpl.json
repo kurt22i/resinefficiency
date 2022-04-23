@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "KamisatoAyaka",
+  "char": "Ganyu",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,25 +8,34 @@
     "version": 1,
     "characters": [
       {
-        "key": "KamisatoAyaka",
-        "level": 20,
-        "ascension": 1,
+        "key": "Ganyu",
+        "level": 80,
+        "ascension": 6,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
+          "AmosBow": {
+            "StrongWilled": "3"
+          },
           "resonance": {
             "ShatteringIce": "on"
+          },
+          "Ganyu": {
+            "A4": "on",
+            "A1": "on"
           },
           "BlizzardStrayer": {
             "state": "frozen"
           }
         },
-        "bonusStats": {},
+        "bonusStats": {
+          "atk_": 40
+        },
         "enemyOverride": {},
         "talent": {
-          "auto": 1,
-          "skill": 1,
-          "burst": 1
+          "auto": 8,
+          "skill": 5,
+          "burst": 7
         },
         "infusionAura": "",
         "constellation": 0,
@@ -53,18 +62,18 @@
               "atk_"
             ],
             "goblet": [
-              "atk_",
-              "cryo_dmg_"
+              "cryo_dmg_",
+              "atk_"
             ],
             "circlet": [
-              "atk_",
               "critRate_",
+              "atk_",
               "critDMG_"
             ]
           },
           "optimizationTarget": [
-            "burst",
-            "cutting"
+            "charged",
+            "frostflakeBloom"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -78,21 +87,21 @@
           "levelHigh": 20
         },
         "team": [
-          "Ganyu",
+          "KamisatoAyaka",
           "SangonomiyaKokomi",
           "Venti"
         ],
-        "compareData": false,
+        "compareData": true,
         "favorite": false
       }
     ],
     "weapons": [
       {
-        "key": "AmenomaKageuchi",
-        "level": 1,
-        "ascension": 0,
-        "refinement": 3,
-        "location": "KamisatoAyaka",
+        "key": "AmosBow",
+        "level": 84,
+        "ascension": 6,
+        "refinement": 1,
+        "location": "Ganyu",
         "lock": true
       }
     ]
