@@ -38,11 +38,18 @@ var domstring = ""
 var optiorder = []string{"ph0", "ph1", "ph2", "ph3"} //the order in which to optimize the characters
 var manualOverride = []string{"", "", "", ""}
 var optifor = []string{"", "", "", ""} //chars to not optimize artis for
+var team = []string{"", "", "", ""}
+var dbconfig = ""
+var mode6 = true
+var optiall = false
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
 	flag.IntVar(&artifarmsims, "a", -1, "how many artifact trials to do")
-	//flag.BoolVar(&step1, "p1", false, "generate artis")
+	flag.BoolVar(&optiall, "all", false, "reoptimize artifacts on all characters")
+	flag.BoolVar(&mode6, "6", true, "bring talents to 6")
+	teamc := ""
+	flag.StringVar(&teamc, "team", "", "the team to test")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
 	flag.StringVar(&domstring, "d", "", "domains to farm")
 	//flag.StringVar(&manualOverride, "mo", "", "override which artis to sim the result sims with, used when changing sets")
@@ -51,6 +58,13 @@ func main() {
 	flag.Parse()
 
 	//noartis = strings.Split(na, ",")
+
+	team = strings.Split(teamc, ",")
+	good2, err2 := os.ReadFile(godatafile)
+	good = string(good2)
+	if team[0] != "" {
+		//dbconfig = makeConfig(team)
+	}
 
 	if artifarmsims == -1 {
 		artifarmsims = 10000 / artifarmtime
@@ -61,11 +75,8 @@ func main() {
 		domains = []string{""}
 	} else {
 		//domains = strings.Split(domstring, ",")
-		processdomstring()
+		//processdomstring()
 	}
-
-	good2, err2 := os.ReadFile(godatafile)
-	good = string(good2)
 
 	time.Now().UnixNano()
 	rand.Seed(42)
@@ -80,6 +91,84 @@ func main() {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
+type DBData struct {
+	Config    string  `json:"config"`
+	DPS       float64 `json:"dps"`
+	ViewerKey string  `json:"viewer_key"`
+}
+
+func makeConfig(team string) string {
+	return personalizeConfig(getConfig())
+}
+
+func getConfig() string {
+	//fetch from: https://viewer.gcsim.workers.dev/gcsimdb
+	var data []DBData
+	getJson("https://viewer.gcsim.workers.dev/gcsimdb", &data)
+	for _, v := range data {
+		match := true
+		for _, c := range team {
+			if !strings.Contains(v.Config, c) {
+				match = false
+				break
+			}
+		}
+		if match {
+			return v.Config
+		}
+	}
+
+	fmt.Printf("no gcsim db entry found for %v", team)
+	return ""
+}
+
+func personalizeConfig(config string) string {
+	lines := strings.Split(config, "\n")
+
+	/*for i := range lines { //remove all set and stats lines
+		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
+			skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
+			if strings.Contains(optifor[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) || optifor[t.params[1]] == "" {
+				skip = false
+			}
+			if skip {
+				continue
+			}
+			lines[i] = ""
+		} else if strings.Contains(lines[i], "add set") {
+			if strings.Contains(manualOverride[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) {
+				lines[i] = ""
+			}
+		}
+	}
+
+	farmJSONs(t.params[0])
+	for i := range optiorder {
+		skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
+		if strings.Contains(optifor[t.params[1]], optiorder[i]) || optifor[t.params[1]] == "" {
+			skip = false
+		}
+		if skip {
+			continue
+		}
+		lines = append(lines, makeNewLines(i, t.params[1]))
+	}*/
+
+	return strings.Join(lines, "\n")
+}
+
+var myClient = &http.Client{Timeout: 10 * time.Second}
+
+func getJson(url string, target interface{}) error {
+	r, err := myClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	return json.NewDecoder(r.Body).Decode(target)
+}
+
 func run() error {
 
 	if true {
@@ -92,20 +181,24 @@ func run() error {
 		}
 	}
 
-	if referencesim == "" {
-		return errors.New("please input your simulation by using url=\"linkhere\"!")
+	if referencesim == "" && dbconfig == "" {
+		return errors.New("please input either your team with -team or your simulation with -url!")
 	}
 
 	//make a tmp folder if it doesn't exist
 	if _, err := os.Stat("./tmp"); !os.IsNotExist(err) {
-		fmt.Println("tmp folder already exists, deleting...")
+		//fmt.Println("tmp folder already exists, deleting...")
 		// path/to/whatever exists
 		os.RemoveAll("./tmp/")
 	}
 	os.Mkdir("./tmp", 0755)
 
-	//get json data from url
-	data := readURL(referencesim)
+	var data jsondata
+	if dbconfig == "" {
+		data = readURL(referencesim)
+	} else {
+		//data = makejsondata()
+	}
 	fmt.Println("running tests...")
 
 	//get baseline result
@@ -137,6 +230,9 @@ func processdomstring() { //this is ugly
 			}
 			manualOverride[i] = settings
 			optifor[i] = doartisfor
+		}
+		if optiall {
+			optifor[i] = optiorder[i]
 		}
 	}
 }
@@ -179,7 +275,7 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 			lvlneed := 10*(t/2) + 50
 			if c.MaxLvl < lvlneed { //talent test that requires ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 1, newmax - 10, newmax}})
-			} else if c.MaxLvl >= 70 && t < 6 { //new: upgrade talents below 6 to 6 if possible, because 1->2 is too small to accurately say anything
+			} else if c.MaxLvl >= 70 && t < 6 && mode6 { //new: upgrade talents below 6 to 6 if possible, because 1->2 is too small to accurately say anything
 				tests = append(tests, test{"talent", []int{i, j, 6, 0, -2, -2}})
 			} else { //talent test without ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 0, -2, -2}})
@@ -214,7 +310,8 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 	}
 
 	//artifact tests
-	makeOptiOrder(data)   //generate the order in which to optimize the chars
+	makeOptiOrder(data) //generate the order in which to optimize the chars
+	processdomstring()
 	if domains[0] == "" { //if the user didnt specify, farm the sim domains
 		//todo
 	} else {
