@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Venti",
+  "char": "Fischl",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,33 +8,30 @@
     "version": 1,
     "characters": [
       {
-        "key": "Venti",
+        "key": "Fischl",
         "level": 60,
-        "ascension": 4,
+        "ascension": 3,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "ViridescentVenerer": {
-            "swirlcryo": "swirl"
-          },
-          "Venti": {
-            "burstAbsorption": "cryo"
+          "resonance": {
+            "EnduringRock": "on"
           }
         },
         "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 1,
-          "skill": 1,
-          "burst": 1
+          "auto": 4,
+          "skill": 4,
+          "burst": 4
         },
         "infusionAura": "",
         "constellation": 0,
         "buildSettings": {
           "setFilters": [
             {
-              "key": "ViridescentVenerer",
-              "num": 4
+              "key": "ThunderingFury",
+              "num": 2
             },
             {
               "key": "",
@@ -45,17 +42,24 @@
               "num": 0
             }
           ],
-          "statFilters": {
-            "enerRech_": 190
-          },
+          "statFilters": {},
           "mainStatKeys": {
-            "sands": [],
-            "goblet": [],
-            "circlet": []
+            "sands": [
+              "atk_"
+            ],
+            "goblet": [
+              "atk_",
+              "electro_dmg_"
+            ],
+            "circlet": [
+              "atk_",
+              "critRate_",
+              "critDMG_"
+            ]
           },
           "optimizationTarget": [
-            "burst",
-            "full14"
+            "skill",
+            "ozDmg"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -63,27 +67,27 @@
           "builds": [],
           "buildDate": 0,
           "maxBuildsToShow": 1,
-          "plotBase": "enerRech_",
+          "plotBase": "",
           "compareBuild": true,
-          "levelLow": 12,
+          "levelLow": 4,
           "levelHigh": 20
         },
         "team": [
-          "KamisatoAyaka",
-          "Ganyu",
+          "Albedo",
+          "Zhongli",
           "SangonomiyaKokomi"
         ],
-        "compareData": true,
+        "compareData": false,
         "favorite": false
       }
     ],
     "weapons": [
       {
-        "key": "FavoniusWarbow",
-        "level": 70,
+        "key": "TheStringless",
+        "level": 80,
         "ascension": 5,
         "refinement": 1,
-        "location": "Venti",
+        "location": "Fischl",
         "lock": true
       }
     ]

@@ -891,7 +891,7 @@ func parseAGresults(c, d int) string {
 			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "4")+1:]) + "\" count=4;\n"
 		} else {
 			override = override[strings.Index(override, "2")+1:]
-			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[:strings.Index(override, "2")-1]) + "\" count=2;\n"
+			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[:strings.Index(override, "2")]) + "\" count=2;\n"
 			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "2")+1:]) + "\" count=2;\n"
 		}
 	}
@@ -1171,12 +1171,12 @@ func farmJSONs(domain int) {
 	}
 }
 
-var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame"}
-var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf"}
+var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence"}
+var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr"}
 
-var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona"}
-var simCharsID = []int{0, 1, 2, 3, 4, 5}
-var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona"}
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
