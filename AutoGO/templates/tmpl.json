@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Fischl",
+  "char": "Ganyu",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,30 +8,45 @@
     "version": 1,
     "characters": [
       {
-        "key": "Fischl",
-        "level": 60,
-        "ascension": 3,
+        "key": "Ganyu",
+        "level": 80,
+        "ascension": 6,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
+          "AmosBow": {
+            "StrongWilled": "3"
+          },
           "resonance": {
-            "EnduringRock": "on"
+            "ShatteringIce": "on"
+          },
+          "Ganyu": {
+            "A4": "on",
+            "A1": "on"
+          },
+          "BlizzardStrayer": {
+            "state": "frozen"
+          },
+          "PaleFlame": {
+            "stacks": "1"
           }
         },
-        "bonusStats": {},
+        "bonusStats": {
+          "atk_": 40
+        },
         "enemyOverride": {},
         "talent": {
-          "auto": 4,
-          "skill": 4,
-          "burst": 4
+          "auto": 8,
+          "skill": 5,
+          "burst": 7
         },
         "infusionAura": "",
         "constellation": 0,
         "buildSettings": {
           "setFilters": [
             {
-              "key": "ThunderingFury",
-              "num": 2
+              "key": "BlizzardStrayer",
+              "num": 4
             },
             {
               "key": "",
@@ -42,24 +57,26 @@
               "num": 0
             }
           ],
-          "statFilters": {},
+          "statFilters": {
+            "enerRech_": 110
+          },
           "mainStatKeys": {
             "sands": [
               "atk_"
             ],
             "goblet": [
-              "atk_",
-              "electro_dmg_"
+              "cryo_dmg_",
+              "atk_"
             ],
             "circlet": [
-              "atk_",
               "critRate_",
+              "atk_",
               "critDMG_"
             ]
           },
           "optimizationTarget": [
-            "skill",
-            "ozDmg"
+            "burst",
+            "dmg"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -67,27 +84,27 @@
           "builds": [],
           "buildDate": 0,
           "maxBuildsToShow": 1,
-          "plotBase": "",
+          "plotBase": "enerRech_",
           "compareBuild": true,
-          "levelLow": 4,
+          "levelLow": 12,
           "levelHigh": 20
         },
         "team": [
-          "Albedo",
-          "Zhongli",
-          "SangonomiyaKokomi"
+          "KamisatoAyaka",
+          "SangonomiyaKokomi",
+          "Venti"
         ],
-        "compareData": false,
+        "compareData": true,
         "favorite": false
       }
     ],
     "weapons": [
       {
-        "key": "TheStringless",
-        "level": 80,
-        "ascension": 5,
+        "key": "AmosBow",
+        "level": 87,
+        "ascension": 6,
         "refinement": 1,
-        "location": "Fischl",
+        "location": "Ganyu",
         "lock": true
       }
     ]

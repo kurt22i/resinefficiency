@@ -170,6 +170,7 @@ func personalizeConfig(config string) string {
 		ttlsubs := newsubs()
 		for j := 0; j < 5; j++ {
 			charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-250:]
+			//fmt.Printf("%v\n", charinfo[:300])
 			charinfo = charinfo[strings.Index(charinfo, "setKey")+1:]
 			set := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
 			for k, s := range artisets {
@@ -193,7 +194,7 @@ func personalizeConfig(config string) string {
 					continue
 				}
 				charinfo = charinfo[strings.Index(charinfo, "value")+1:]
-				ssv := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+				ssv := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, "}")]
 				ssvf64, _ := strconv.ParseFloat(ssv, 64)
 				ttlsubs[getStatID(ssk)] += ssvf64 / float64(ispct[getStatID(ssk)])
 			}
