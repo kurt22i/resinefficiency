@@ -63,7 +63,7 @@ func main() {
 	good2, err2 := os.ReadFile(godatafile)
 	good = string(good2)
 	if team[0] != "" {
-		//dbconfig = makeConfig(team)
+		dbconfig = makeConfig()
 	}
 
 	if artifarmsims == -1 {
@@ -97,7 +97,7 @@ type DBData struct {
 	ViewerKey string  `json:"viewer_key"`
 }
 
-func makeConfig(team string) string {
+func makeConfig() string {
 	return personalizeConfig(getConfig())
 }
 
@@ -125,34 +125,106 @@ func getConfig() string {
 func personalizeConfig(config string) string {
 	lines := strings.Split(config, "\n")
 
-	/*for i := range lines { //remove all set and stats lines
-		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
-			skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
-			if strings.Contains(optifor[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) || optifor[t.params[1]] == "" {
-				skip = false
-			}
-			if skip {
-				continue
-			}
+	for i := range lines { //remove all set and stats lines
+		if strings.Contains(lines[i], "char lvl") || strings.Contains(lines[i], "add set") {
 			lines[i] = ""
-		} else if strings.Contains(lines[i], "add set") {
-			if strings.Contains(manualOverride[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) {
-				lines[i] = ""
-			}
+		} else if strings.Contains(lines[i], "add weapon") || strings.Contains(lines[i], "add stats") {
+			lines[i] = ""
 		}
 	}
 
-	farmJSONs(t.params[0])
-	for i := range optiorder {
-		skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
-		if strings.Contains(optifor[t.params[1]], optiorder[i]) || optifor[t.params[1]] == "" {
-			skip = false
+	lines = append(lines, "energy every interval=69,420 amount=100;")
+
+	for i := range team {
+		charinfo := good[strings.Index(good, "key\":\""+GOchars[getCharID(team[i])]):]
+		charinfo = charinfo[strings.Index(charinfo, "level")+1:]
+		lvl := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		//0 20 1 40 2 50 3 60 4 70 5 80 6 90
+		charinfo = charinfo[strings.Index(charinfo, "ascension")+1:]
+		maxlvl, _ := strconv.Atoi(charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")])
+		maxlvl = maxlvl*10 + 30
+		if maxlvl == 30 {
+			maxlvl = 20
 		}
-		if skip {
-			continue
+		charinfo = charinfo[strings.Index(charinfo, "talent")+1:]
+		charinfo = charinfo[strings.Index(charinfo, "auto")+1:]
+		aa := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		charinfo = charinfo[strings.Index(charinfo, "skill")+1:]
+		e := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		charinfo = charinfo[strings.Index(charinfo, "burst")+1:]
+		q := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		charinfo = charinfo[strings.Index(charinfo, "constellation")+1:]
+		c := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		lines = append(lines, team[i]+" char lvl="+lvl+"/"+strconv.Itoa(maxlvl)+" cons="+c+" talent="+aa+","+e+","+q+";")
+		artisets := []string{"", "", "", "", ""}
+		ascount := []int{0, 0, 0, 0, 0}
+		ttlsubs := newsubs()
+		for j := 0; j < 5; j++ {
+			charinfo = charinfo[strings.Index(good, "location\":\""+GOchars[getCharID(team[i])])-250:]
+			charinfo = charinfo[strings.Index(charinfo, "setKey")+1:]
+			set := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+			for k, s := range artisets {
+				if s == set {
+					ascount[k]++
+					break
+				} else if s == "" {
+					artisets[k] = set
+					ascount[k]++
+					break
+				}
+			}
+			//this basically assumes mainstats for lvl 20 atm
+			charinfo = charinfo[strings.Index(charinfo, "mainStatKey")+1:]
+			msk := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+			ttlsubs[getStatID(msk)] += msv[getStatID(msk)]
+			for k := 0; k < 4; k++ {
+				charinfo = charinfo[strings.Index(charinfo, "key")+1:]
+				ssk := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+				if ssk == "" {
+					continue
+				}
+				charinfo = charinfo[strings.Index(charinfo, "value")+1:]
+				ssv := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+				ssvf64, _ := strconv.ParseFloat(ssv, 64)
+				ttlsubs[getStatID(ssk)] += ssvf64 / float64(ispct[getStatID(ssk)])
+			}
+			charinfo = charinfo[strings.Index(charinfo, "lock")+1:]
 		}
-		lines = append(lines, makeNewLines(i, t.params[1]))
-	}*/
+		lines = append(lines, team[i]+" add stats "+torolls(ttlsubs)+";")
+		for j := range ascount {
+			if ascount[j] >= 2 {
+				additional := ""
+				if artisets[j] == "HuskOfOpulentDreams" {
+					additional = " +params=[stacks=4]"
+				}
+				count := "2"
+				if ascount[j] >= 4 {
+					count = "4"
+				}
+				lines = append(lines, team[i]+" add set=\""+strings.ToLower(artisets[j])+"\" count="+count+additional+";")
+			}
+		}
+		//purposely avoid filtering to only the weapon section here, so that it errors if theres another arti with this location
+		charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-100:]
+		charinfo = charinfo[strings.Index(charinfo, "key")+1:]
+		wep := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+		charinfo = charinfo[strings.Index(charinfo, "level")+1:]
+		lvl = charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		//0 20 1 40 2 50 3 60 4 70 5 80 6 90
+		charinfo = charinfo[strings.Index(charinfo, "ascension")+1:]
+		maxlvl, _ = strconv.Atoi(charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")])
+		maxlvl = maxlvl*10 + 30
+		if maxlvl == 30 {
+			maxlvl = 20
+		}
+		charinfo = charinfo[strings.Index(charinfo, "refinement")+1:]
+		r := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		additional := ""
+		if wep == "SerpentSpine" {
+			additional = " +params=[stacks=5]"
+		}
+		lines = append(lines, team[i]+" add weapon=\""+strings.ToLower(wep)+"\" refine="+r+" lvl="+lvl+"/"+strconv.Itoa(maxlvl)+additional+";")
+	}
 
 	return strings.Join(lines, "\n")
 }
@@ -197,7 +269,7 @@ func run() error {
 	if dbconfig == "" {
 		data = readURL(referencesim)
 	} else {
-		//data = makejsondata()
+		data = makejsondata()
 	}
 	fmt.Println("running tests...")
 
@@ -590,6 +662,9 @@ func desc(t test, sd jsondata) (dsc string) {
 		}
 		return sd.Characters[t.params[0]].Name + " " + talent + " to " + strconv.Itoa(t.params[2]) + ascension
 	case "weapon":
+		if sd.Characters[t.params[0]].Weapon.Name == "thrillingtalesofdragonslayers" { //ttds is too long and breaks the formatting, so we need a (ugly) manual override :derpfei:
+			return sd.Characters[t.params[0]].Name + "'s ttds to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
+		}
 		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
 	case "artifact":
 		//return sd.Characters[t.params[0]].Name + " artifacts"
