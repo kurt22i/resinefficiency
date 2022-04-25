@@ -64,6 +64,9 @@ func main() {
 	good = string(good2)
 	if team[0] != "" {
 		dbconfig = makeConfig()
+		it := "iteration=" + strconv.Itoa(simspertest)
+		dbconfig = reIter.ReplaceAllString(dbconfig, it)
+		dbconfig = reWorkers.ReplaceAllString(dbconfig, "workers=30")
 	}
 
 	if artifarmsims == -1 {
@@ -152,15 +155,21 @@ func personalizeConfig(config string) string {
 		charinfo = charinfo[strings.Index(charinfo, "skill")+1:]
 		e := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
 		charinfo = charinfo[strings.Index(charinfo, "burst")+1:]
-		q := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		q := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, "}")]
 		charinfo = charinfo[strings.Index(charinfo, "constellation")+1:]
 		c := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
-		lines = append(lines, team[i]+" char lvl="+lvl+"/"+strconv.Itoa(maxlvl)+" cons="+c+" talent="+aa+","+e+","+q+";")
+		for j := range lines { //we do this so that the characters are declared in the right order, otherwise sim orders them based on action list which messes things up
+			if lines[j] == "" {
+				lines[j] = team[i] + " char lvl=" + lvl + "/" + strconv.Itoa(maxlvl) + " cons=" + c + " talent=" + aa + "," + e + "," + q + ";"
+				break
+			}
+		}
+
 		artisets := []string{"", "", "", "", ""}
 		ascount := []int{0, 0, 0, 0, 0}
 		ttlsubs := newsubs()
 		for j := 0; j < 5; j++ {
-			charinfo = charinfo[strings.Index(good, "location\":\""+GOchars[getCharID(team[i])])-250:]
+			charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-250:]
 			charinfo = charinfo[strings.Index(charinfo, "setKey")+1:]
 			set := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
 			for k, s := range artisets {
@@ -269,7 +278,7 @@ func run() error {
 	if dbconfig == "" {
 		data = readURL(referencesim)
 	} else {
-		data = makejsondata()
+		data = runSim(dbconfig)
 	}
 	fmt.Println("running tests...")
 
@@ -312,7 +321,6 @@ func processdomstring() { //this is ugly
 func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talents that are not used in the config
 	tests := make([]test, 0)
 	for i, c := range data.Characters { //should split this into functions
-
 		//add level tests
 		newlevel := (c.Level/10 + 1) * 10
 		if newlevel < 40 && newlevel != 20 {
@@ -418,7 +426,7 @@ func makeOptiOrder(data jsondata) { //sort the chars by dps in refsim to determi
 	}
 }
 
-func domainid(dom string) int { //returns the interal id for an artifact's domain
+func domainid(dom string) int { //returns the internal id for an artifact's domain
 	id := -1
 	for i, a := range artiabbrs {
 		if dom == a {
@@ -627,6 +635,7 @@ func runTest(t test, config string, baseline jsondata) (res result) {
 	case "level":
 		simdata = runSim(runLevelTest(t, config))
 	case "talent":
+		//fmt.Printf("%vt%v", t, config)
 		simdata = runSim(runTalentTest(t, config))
 	case "weapon":
 		simdata = runSim(runWeaponTest(t, config))
@@ -1249,9 +1258,9 @@ func farmJSONs(domain int) {
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence"}
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr"}
 
-var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli"}
-var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
-var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli"}
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
