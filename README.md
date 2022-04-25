@@ -1,16 +1,16 @@
 # resinefficiency
  
-this tool calculates the most resin efficient upgrades for your team by calculating the DPS increase/resin cost of each upgrade. It's currently in pre-pre-alpha so there might be bugs (it will probably stay like this for quite a while, as I really don't have the coding knowledge to expand it much farther. if you have ideas or want to clean up my messy code, PRs are welcome)
-
+this tool calculates the most resin efficient upgrades for your team by calculating the DPS increase/resin cost of each upgrade, including farming artifacts. It aims to help answer questions like "what's the best way to improve my team?" and "am i really gaining anything from farming this domain, or is it time to stop?". There's definitely room for improvement 
 # How to Use
 
 1. Click Code -> Download ZIP
 2. In your downloads folder, right click the ZIP, and click Extract All
 3. Navigate inside the "resinefficiency-main" folders
 4. In the address bar (the bar that says something like "Downloads > resinefficiency-main > resinefficiencymain"), type "cmd" and press Enter
-5. Paste in the following command: go run . -url=linkhere
-6. Replace linkhere with the link to your personal sim
-7. Press Enter and watch the calc! At default iterations of 10000, it should take about 2 minutes.
+5. 
+6. Paste in the following command: go run . -url=linkhere
+7. Replace linkhere with the link to your personal sim
+8. Press Enter and watch the calc! At default iterations of 10000, it should take about 2 minutes.
 
 Additional options:</br>
 -i (int) number of iterations per test</br>
@@ -22,4 +22,6 @@ credits:
 - srl#2712: codebase, answering my numerous dumb go questions
 - Shizuka#7791: answering my numerous dumb go questions
 - theBowja/genshin-db: jsons for the weapons
-- all the gcsim contributors
+- all the gcsim devs and contributors
+- frzyc#3029 and all the GO devs
+- Tibo#4309 for writing and letting me use AutoGO
