@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Ganyu",
+  "char": "Xingqiu",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,44 +8,29 @@
     "version": 1,
     "characters": [
       {
-        "key": "Ganyu",
-        "level": 80,
-        "ascension": 6,
+        "key": "Xingqiu",
+        "level": 60,
+        "ascension": 3,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "AmosBow": {
-            "StrongWilled": "3"
-          },
-          "resonance": {
-            "ShatteringIce": "on"
-          },
-          "Ganyu": {
-            "A4": "on",
-            "A1": "on"
-          },
-          "BlizzardStrayer": {
-            "state": "frozen"
-          },
-          "PaleFlame": {
-            "stacks": "1"
+          "Xingqiu": {
+            "c2": "on"
           }
         },
-        "bonusStats": {
-          "atk_": 40
-        },
+        "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 8,
-          "skill": 5,
-          "burst": 7
+          "auto": 2,
+          "skill": 2,
+          "burst": 4
         },
         "infusionAura": "",
-        "constellation": 0,
+        "constellation": 2,
         "buildSettings": {
           "setFilters": [
             {
-              "key": "BlizzardStrayer",
+              "key": "EmblemOfSeveredFate",
               "num": 4
             },
             {
@@ -58,15 +43,16 @@
             }
           ],
           "statFilters": {
-            "enerRech_": 110
+            "enerRech_": 180
           },
           "mainStatKeys": {
             "sands": [
-              "atk_"
+              "atk_",
+              "enerRech_"
             ],
             "goblet": [
-              "cryo_dmg_",
-              "atk_"
+              "atk_",
+              "hydro_dmg_"
             ],
             "circlet": [
               "critRate_",
@@ -84,27 +70,27 @@
           "builds": [],
           "buildDate": 0,
           "maxBuildsToShow": 1,
-          "plotBase": "enerRech_",
+          "plotBase": "",
           "compareBuild": true,
-          "levelLow": 12,
+          "levelLow": 1,
           "levelHigh": 20
         },
         "team": [
-          "KamisatoAyaka",
-          "SangonomiyaKokomi",
-          "Venti"
+          "Xiangling",
+          "Bennett",
+          "RaidenShogun"
         ],
-        "compareData": true,
+        "compareData": false,
         "favorite": false
       }
     ],
     "weapons": [
       {
-        "key": "AmosBow",
-        "level": 87,
-        "ascension": 6,
+        "key": "FavoniusSword",
+        "level": 80,
+        "ascension": 5,
         "refinement": 1,
-        "location": "Ganyu",
+        "location": "Xingqiu",
         "lock": true
       }
     ]
