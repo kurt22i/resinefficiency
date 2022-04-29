@@ -40,14 +40,19 @@ var manualOverride = []string{"", "", "", ""}
 var optifor = []string{"", "", "", ""} //chars to not optimize artis for
 var team = []string{"", "", "", ""}
 var dbconfig = ""
-var mode6 = true
+var mode6 = 6
+var mode85 = false
 var optiall = false
+var justgenartis = false
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
 	flag.IntVar(&artifarmsims, "a", 30, "how many artifact trials to do")
+	flag.IntVar(&artifarmtime, "ft", 126, "how many artifacts to farm")
 	flag.BoolVar(&optiall, "all", false, "reoptimize artifacts on all characters")
-	flag.BoolVar(&mode6, "6", true, "bring talents to 6")
+	flag.IntVar(&mode6, "tlmin", 6, "bring talents to a certain level")
+	flag.BoolVar(&mode85, "85", false, "level chars to 85 before 90")
+	flag.BoolVar(&justgenartis, "artigen", false, "just generate artifact jsons")
 	teamc := ""
 	flag.StringVar(&teamc, "team", "", "the team to test")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
@@ -126,6 +131,10 @@ func getConfig() string {
 }
 
 func personalizeConfig(config string) string {
+	if justgenartis {
+		return config
+	}
+
 	lines := strings.Split(config, "\n")
 
 	for i := range lines { //remove all set and stats lines
@@ -170,6 +179,9 @@ func personalizeConfig(config string) string {
 		ttlsubs := newsubs()
 		for j := 0; j < 5; j++ {
 			charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-250:]
+			if !strings.Contains(charinfo[250:], "weapons") { //strings.Index(charinfo, ",")-1 < 0 {
+				break //this means no more artis found
+			}
 			//fmt.Printf("%v\n", charinfo[:300])
 			charinfo = charinfo[strings.Index(charinfo, "setKey")+1:]
 			set := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
@@ -331,8 +343,11 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 		if newmax < 40 {
 			newmax = 40 //could just do this with math.max, but it require floats for some reason
 		}
-		if newlevel > 90 {
+		if newlevel >= 90 {
 			newlevel = 90
+			if mode85 && c.Level < 85 {
+				newlevel = 85
+			}
 		}
 		//fmt.Printf("%v", c)
 		if c.Level < 90 && c.Level != c.MaxLvl { //levelup test
@@ -341,6 +356,9 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 			newmax -= 10
 			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
 			newlevel -= 10
+			if newlevel == 75 {
+				newlevel += 5
+			}
 		}
 		if c.MaxLvl < 90 { //ascension test
 			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
@@ -356,8 +374,8 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 			lvlneed := 10*(t/2) + 50
 			if c.MaxLvl < lvlneed { //talent test that requires ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 1, newmax - 10, newmax}})
-			} else if c.MaxLvl >= 70 && t < 6 && mode6 { //new: upgrade talents below 6 to 6 if possible, because 1->2 is too small to accurately say anything
-				tests = append(tests, test{"talent", []int{i, j, 6, 0, -2, -2}})
+			} else if c.MaxLvl >= 70 && t < mode6 && mode6 != 0 { //new: upgrade talents below 6 to 6 if possible, because 1->2 is too small to accurately say anything
+				tests = append(tests, test{"talent", []int{i, j, mode6, 0, -2, -2}})
 			} else { //talent test without ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 0, -2, -2}})
 			}
@@ -455,6 +473,9 @@ func rarity(wep string) int {
 		fmt.Println(err)
 	}
 	data.Rarity, err = strconv.Atoi(data.Raritys)
+	if data.Rarity < 3 {
+		data.Rarity = 3
+	}
 	return data.Rarity
 }
 
@@ -708,15 +729,15 @@ func resin(t test, sd jsondata) (rsn float64) {
 		return -1
 	case "level":
 		mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[1]-1) / PurpleBookXP
-		mats.mora = int(math.Floor(mats.books / 5.0))
+		mats.mora = int(math.Floor(mats.books/5.0)) * PurpleBookXP
 		if t.params[2] != sd.Characters[t.params[0]].MaxLvl { //if we ascended
 			mats.mora += 20000 * (t.params[2] - 30) / 10
 			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
 		}
 	case "talent":
-		if t.params[2] == 6 { //this whole function is ugly, but this part especially. functionality first tho
+		if t.params[2] == mode6 { //this whole function is ugly, but this part especially. functionality first tho
 			talents := []int{sd.Characters[t.params[0]].Talents.Attack, sd.Characters[t.params[0]].Talents.Skill, sd.Characters[t.params[0]].Talents.Burst}
-			for i := talents[t.params[1]] + 1; i <= 6; i++ {
+			for i := talents[t.params[1]] + 1; i <= mode6; i++ {
 				mats.mora += talentmora[i-2] * 100
 				mats.talentbooks += talentbks[i-2]
 			}
@@ -1259,9 +1280,9 @@ func farmJSONs(domain int) {
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence"}
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr"}
 
-var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe"}
-var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
-var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe"}
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}

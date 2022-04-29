@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Xingqiu",
+  "char": "Sucrose",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,29 +8,32 @@
     "version": 1,
     "characters": [
       {
-        "key": "Xingqiu",
-        "level": 60,
-        "ascension": 3,
+        "key": "Sucrose",
+        "level": 90,
+        "ascension": 6,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "Xingqiu": {
-            "c2": "on"
+          "ThrillingTalesOfDragonSlayers": {
+            "Heritage": "on"
+          },
+          "ViridescentVenerer": {
+            "swirlelectro": "swirl"
           }
         },
         "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 2,
-          "skill": 2,
-          "burst": 4
+          "auto": 1,
+          "skill": 1,
+          "burst": 1
         },
         "infusionAura": "",
-        "constellation": 2,
+        "constellation": 6,
         "buildSettings": {
           "setFilters": [
             {
-              "key": "EmblemOfSeveredFate",
+              "key": "ViridescentVenerer",
               "num": 4
             },
             {
@@ -42,27 +45,25 @@
               "num": 0
             }
           ],
-          "statFilters": {
-            "enerRech_": 180
-          },
+          "statFilters": {},
           "mainStatKeys": {
             "sands": [
-              "atk_",
+              "eleMas",
               "enerRech_"
             ],
             "goblet": [
-              "atk_",
-              "hydro_dmg_"
+              "eleMas",
+              "anemo_dmg_"
             ],
             "circlet": [
-              "critRate_",
-              "atk_",
-              "critDMG_"
+              "eleMas",
+              "critDMG_",
+              "critRate_"
             ]
           },
           "optimizationTarget": [
-            "burst",
-            "dmg"
+            "reaction",
+            "electroSwirl"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -70,15 +71,15 @@
           "builds": [],
           "buildDate": 0,
           "maxBuildsToShow": 1,
-          "plotBase": "",
+          "plotBase": "enerRech_",
           "compareBuild": true,
-          "levelLow": 1,
+          "levelLow": 0,
           "levelHigh": 20
         },
         "team": [
-          "Xiangling",
-          "Bennett",
-          "RaidenShogun"
+          "Beidou",
+          "",
+          ""
         ],
         "compareData": false,
         "favorite": false
@@ -86,11 +87,11 @@
     ],
     "weapons": [
       {
-        "key": "FavoniusSword",
-        "level": 80,
-        "ascension": 5,
-        "refinement": 1,
-        "location": "Xingqiu",
+        "key": "ThrillingTalesOfDragonSlayers",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 5,
+        "location": "Sucrose",
         "lock": true
       }
     ]
