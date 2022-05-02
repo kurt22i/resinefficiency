@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Sucrose",
+  "char": "Xiangling",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,32 +8,30 @@
     "version": 1,
     "characters": [
       {
-        "key": "Sucrose",
+        "key": "Xiangling",
         "level": 90,
         "ascension": 6,
         "hitMode": "avgHit",
-        "reactionMode": "",
+        "reactionMode": "pyro_vaporize",
         "conditional": {
-          "ThrillingTalesOfDragonSlayers": {
-            "Heritage": "on"
-          },
-          "ViridescentVenerer": {
-            "swirlelectro": "swirl"
+          "Xiangling": {
+            "afterGuobaHit": "afterGuobaHit",
+            "afterPyronado": "duringPyronado"
           }
         },
         "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 1,
-          "skill": 1,
-          "burst": 1
+          "auto": 9,
+          "skill": 9,
+          "burst": 9
         },
         "infusionAura": "",
         "constellation": 6,
         "buildSettings": {
           "setFilters": [
             {
-              "key": "ViridescentVenerer",
+              "key": "EmblemOfSeveredFate",
               "num": 4
             },
             {
@@ -45,25 +43,26 @@
               "num": 0
             }
           ],
-          "statFilters": {},
+          "statFilters": {
+            "enerRech_": 150
+          },
           "mainStatKeys": {
             "sands": [
               "eleMas",
-              "enerRech_"
+              "enerRech_",
+              "atk_"
             ],
             "goblet": [
-              "eleMas",
-              "anemo_dmg_"
+              "pyro_dmg_"
             ],
             "circlet": [
-              "eleMas",
-              "critDMG_",
-              "critRate_"
+              "critRate_",
+              "critDMG_"
             ]
           },
           "optimizationTarget": [
-            "reaction",
-            "electroSwirl"
+            "burst",
+            "dmgNado"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -71,13 +70,13 @@
           "builds": [],
           "buildDate": 0,
           "maxBuildsToShow": 1,
-          "plotBase": "enerRech_",
+          "plotBase": "",
           "compareBuild": true,
-          "levelLow": 0,
+          "levelLow": 3,
           "levelHigh": 20
         },
         "team": [
-          "Beidou",
+          "Bennett",
           "",
           ""
         ],
@@ -87,11 +86,11 @@
     ],
     "weapons": [
       {
-        "key": "ThrillingTalesOfDragonSlayers",
-        "level": 1,
-        "ascension": 0,
+        "key": "TheCatch",
+        "level": 90,
+        "ascension": 6,
         "refinement": 5,
-        "location": "Sucrose",
+        "location": "Xiangling",
         "lock": true
       }
     ]

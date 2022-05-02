@@ -18,7 +18,7 @@ async function run() {
         console.log()
         console.log(`Starting template ${templateName}`)
 
-        const url = `https://frzyc.github.io/genshin-optimizer/#/character/${char}/build`
+        const url = `https://frzyc.github.io/genshin-optimizer/#/character/${char}/optimize`
         const outputFile = `output/${templateName}.json`
         const output = await loadOutput(outputFile)
 
@@ -49,7 +49,7 @@ async function run() {
                 await page.waitForTimeout(1000)
                 //const buildbutton = await page.$("#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div.MuiCardContent-root.css-182b5p1 > div:nth-child(2) > div > div.MuiTabs-scroller.MuiTabs-hideScrollbar.MuiTabs-scrollableX.css-12qnib > div > button:nth-child(5)")
                // await buildbutton.click()
-                await clickButton(page, "Generate")
+                await clickButton(page, "Generate Builds")
 
                 await busyWait(page, user)
                 
@@ -59,13 +59,13 @@ async function run() {
                 var str = ""
                 for (let i=0;i<5;i++) {//each artifact
 //document.querySelector("")
-                    const artitype = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1gv0prw > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.grad-5star.MuiBox-root.css-14ua1gi > div.MuiChip-root.MuiChip-filled.MuiChip-sizeSmall.MuiChip-colorDefault.MuiChip-filledDefault.css-dttlzh > span > h6`)
+                    const artitype = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.grad-5star.MuiBox-root.css-14ua1gi > div.MuiChip-root.MuiChip-filled.MuiChip-sizeSmall.MuiChip-colorDefault.MuiChip-filledDefault.css-dttlzh > span > h6`)
                     var raw = await (await artitype.getProperty("innerHTML")).jsonValue()
                     raw = raw.substring(raw.indexOf("icon=")+6)
                     str += raw.substring(0, raw.indexOf("\"")) + "="
                     str += await (await artitype.getProperty("innerText")).jsonValue() + "~"
                     for (let j=0;j<4;j++) {//substats
-                        const substat = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1gv0prw > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.MuiBox-root.css-11yya3r > div:nth-child(${j+1}) > span`)
+                        const substat = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.MuiBox-root.css-11yya3r > div:nth-child(${j+1}) > span`)
                         var raw = await (await substat.getProperty("innerHTML")).jsonValue()
                         raw = raw.substring(raw.indexOf("icon=")+6)
                         str += raw.substring(0, raw.indexOf("\"")) + "="

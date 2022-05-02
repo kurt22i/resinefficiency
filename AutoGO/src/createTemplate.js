@@ -24,22 +24,22 @@ async function run() {
         console.error(`Could not find char ${char}; chars in GOOD: ${template.characters.map(x => x.key).join(", ")}`)
         return
     }
-    template.characters = template.characters.filter(x => x.key == char)
+     //template.characters = template.characters.filter(x => x.key == char)
 
     // Filter out other weapons
     const weapons = template.weapons.map(x => x.key)
-    template.weapons = template.weapons.filter(x => x.location == char)
+    //emplate.weapons = template.weapons.filter(x => x.location == char)
 
-    const weapon = template.weapons[0]?.key
-    if (!weapon) {
+    //const weapon = template.weapons[0]?.key
+    /*if (!weapon) {
         console.error(`Could not find weapon of ${char}`)
         return
     }
-    console.log(`Found weapon: ${weapon}`)
+    console.log(`Found weapon: ${weapon}`)*/
 
     template.characters.forEach(x => {
         // Cleanup conditional settings
-        x.conditional = Object.fromEntries(Object.entries(x.conditional).filter(x => x[0] == weapon || !weapons.includes(x[0])))
+        //x.conditional = Object.fromEntries(Object.entries(x.conditional).filter(x => x[0] == weapon || !weapons.includes(x[0])))
 
         // Force certain settings
         x.buildSettings.useExcludedArts = false

@@ -44,6 +44,7 @@ var mode6 = 6
 var mode85 = false
 var optiall = false
 var justgenartis = false
+var artisonly = false
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
@@ -53,6 +54,7 @@ func main() {
 	flag.IntVar(&mode6, "tlmin", 6, "bring talents to a certain level")
 	flag.BoolVar(&mode85, "85", false, "level chars to 85 before 90")
 	flag.BoolVar(&justgenartis, "artigen", false, "just generate artifact jsons")
+	flag.BoolVar(&artisonly, "onlyartis", false, "only test artifacts")
 	teamc := ""
 	flag.StringVar(&teamc, "team", "", "the team to test")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
@@ -399,6 +401,9 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 			newmax -= 10
 			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
 			newlevel -= 10
+			if newlevel == 30 {
+				newlevel -= 10
+			}
 		}
 		if c.Weapon.MaxLvl < 90 { //ascension test
 			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
@@ -406,6 +411,11 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 
 		//add artifact test
 		//tests = append(tests, test{"artifact", []int{i}})
+	}
+
+	//if only artis, remove all the tests above
+	if artisonly {
+		tests = make([]test, 0)
 	}
 
 	//artifact tests
@@ -735,7 +745,7 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
 		}
 	case "talent":
-		if t.params[2] == mode6 { //this whole function is ugly, but this part especially. functionality first tho
+		if t.params[2] == mode6 && t.params[3] == 0 { //this whole function is ugly, but this part especially. functionality first tho
 			talents := []int{sd.Characters[t.params[0]].Talents.Attack, sd.Characters[t.params[0]].Talents.Skill, sd.Characters[t.params[0]].Talents.Burst}
 			for i := talents[t.params[1]] + 1; i <= mode6; i++ {
 				mats.mora += talentmora[i-2] * 100
@@ -1280,13 +1290,13 @@ func farmJSONs(domain int) {
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence"}
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr"}
 
-var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose"}
-var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}
-var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose"}
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose", "jean", "chongyun"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose", "Jean", "Chongyun"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
-var AGstatKeys = []string{"Atk", "n/a", "hp", "n/a", "Def", "n/a", "ele_mas", "EnergyRecharge", "CritRate", "CritDMG", "HealingBonus", "pyro", "electro", "cryo", "hydro", "anemo", "geo", "physical"}
+var AGstatKeys = []string{"Atk", "n/a", "hp", "n/a", "Def", "n/a", "ele_mas", "EnergyRecharge", "CritRate", "CritDMG", "HealingBonus", "pyro", "electro", "cryo", "hydro", "anemo", "geo", "physicalDmgBonus"}
 var msv = []float64{311.0, 0.466, 4780, 0.466, -1, 0.583, 187, 0.518, 0.311, 0.622, 0.359, 0.466, 0.466, 0.466, 0.466, 0.466, 0.466, 0.583} //def% heal and phys might be wrong
 var ispct = []int{1, 100, 1, 100, 1, 100, 1, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100}
 
