@@ -9,9 +9,10 @@ this tool calculates the most resin efficient upgrades for your team by calculat
 3. Run the command ```npm i``` to install dependencies
 4. In the main resin efficiency folder, open the GOdata.txt file and paste in your own GO database
 5. In the main folder, run the command ```go run . -team="char1,char2,char3,char4"```
-6. Press Enter and watch the calc! At default iterations of 10000, it should take about 2 minutes. (this does not simulate artifacts by default - you can add them by using the options below)
+6. Press Enter and watch the calc! At default iterations of 10000, it should take about 2 minutes. (this does not simulate artifacts by default - they can be enabled with the -d parameter below)
 
-Additional options:</br>
+Options:</br>
+-d (string) which artifact domains to farm.
 -i (int) number of iterations per test</br>
 -halp (bool) if you're getting a zlib error try adding this, the error happens when the linked sim was created on desktop rather than web</br>
 
