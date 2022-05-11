@@ -1,0 +1,6 @@
+{
+    "templates": [
+        "templates/tmpl.json"
+    ],
+    "onlyNew": false
+}

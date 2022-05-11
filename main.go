@@ -13,59 +13,256 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	//"gopkg.in/alecthomas/kingpin.v2"
 )
 
-// var (
-// 	verbose = kingpin.Flag("verbose", "Verbose mode.").Short('v').Bool()
-// 	name    = kingpin.Arg("name", "Name of user.").Required().String()
-// )
-//var referencesim = *flag.String("url", "", "your simulation")
-
-var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link to the gcsim that gives rotation, er reqs and optimization priority
+var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link to the gcsim that gives rotation, er reqs and optimization priority. actually no er reqs unless user wants, instead, let them use their er and set infinite energy.
 //var chars = make([]Character, 4);
 var artifarmtime = 126 //how long it should simulate farming artis, set as number of artifacts farmed. 20 resin ~= 1.07 artifacts.
-var artifarmsims = -1  //default: -1, which will be 100000/artifarmtime. set it to something else if desired.
-//var domains []string = {"esf"}
-var simspertest = 100000 //iterations to run gcsim at when testing dps gain from upgrades.
-var godatafile = ""      //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
-//var weps []wepjson
-var halp = false
+var artifarmsims = 30  //default: -1, which will be 100000/artifarmtime. set it to something else if desired. nvm 30 is fine lol
+var domains []string
+var simspertest = 100000      //iterations to run gcsim at when testing dps gain from upgrades.
+var godatafile = "GOdata.txt" //filename of the GO data that will be used for weapons, current artifacts, and optimization settings besides ER. When go adds ability to optimize for x*output1 + y*output2, the reference sim will be used to determine optimization target.
+var good string
+var domstring = ""
+var optiorder = []string{"ph0", "ph1", "ph2", "ph3"} //the order in which to optimize the characters
+var manualOverride = []string{"", "", "", ""}
+var optifor = []string{"", "", "", ""} //chars to not optimize artis for
+var team = []string{"", "", "", ""}
+var dbconfig = ""
+var mode6 = 6
+var mode85 = false
+var optiall = false
+var justgenartis = false
+var artisonly = false
 
 func main() {
-	//kingpin.Version("0.0.1")
-	//kingpin.Parse()
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
-	flag.BoolVar(&halp, "halp", false, "use gzip instead of zlib")
+	flag.IntVar(&artifarmsims, "a", 30, "how many artifact trials to do")
+	flag.IntVar(&artifarmtime, "ft", 126, "how many artifacts to farm")
+	flag.BoolVar(&optiall, "all", false, "reoptimize artifacts on all characters")
+	flag.IntVar(&mode6, "tlmin", 6, "bring talents to a certain level")
+	flag.BoolVar(&mode85, "85", false, "level chars to 85 before 90")
+	flag.BoolVar(&justgenartis, "artigen", false, "just generate artifact jsons")
+	flag.BoolVar(&artisonly, "onlyartis", false, "only test artifacts")
+	teamc := ""
+	flag.StringVar(&teamc, "team", "", "the team to test")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
-	//referencesim = "https://gcsim.app/viewer/share/" + *flag.String("hash", "", "your simulation")
+	flag.StringVar(&domstring, "d", "", "domains to farm")
+	//flag.StringVar(&manualOverride, "mo", "", "override which artis to sim the result sims with, used when changing sets")
+	//var na = ""
+	//flag.StringVar(&na, "na", "", "chars to skip optimizing for")
 	flag.Parse()
-	//referencesim = (*url) ok i give up, no command line params for now
-	//fmt.Printf("url is: %v\n", referencesim)
-	//simspertest = *iter
-	/*var d bool
-	var force bool
-	flag.BoolVar(&d, "d", false, "skip re-download executable?")
-	flag.BoolVar(&force, "f", false, "force rerun all")
-	flag.Parse()*/
+
+	//noartis = strings.Split(na, ",")
+
+	team = strings.Split(teamc, ",")
+	good2, err2 := os.ReadFile(godatafile)
+	good = string(good2)
+	if team[0] != "" {
+		dbconfig = makeConfig()
+		it := "iteration=" + strconv.Itoa(simspertest)
+		dbconfig = reIter.ReplaceAllString(dbconfig, it)
+		dbconfig = reWorkers.ReplaceAllString(dbconfig, "workers=30")
+	}
+
+	if artifarmsims == -1 {
+		artifarmsims = 10000 / artifarmtime
+	}
+
+	if domstring == "" {
+		//refsimdomains
+		domains = []string{""}
+	} else {
+		//domains = strings.Split(domstring, ",")
+		//processdomstring()
+	}
+
+	time.Now().UnixNano()
+	rand.Seed(42)
 
 	err := run()
 
-	if err != nil {
-		fmt.Printf("Error encountered, ending script: %+v\n", err)
+	if err != nil || err2 != nil {
+		fmt.Printf("Error encountered, ending script: %+v\n", err2)
 	}
 
 	fmt.Print("\ntesting complete (press enter to exit)")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
+}
+
+type DBData struct {
+	Config    string  `json:"config"`
+	DPS       float64 `json:"dps"`
+	ViewerKey string  `json:"viewer_key"`
+}
+
+func makeConfig() string {
+	return personalizeConfig(getConfig())
+}
+
+func getConfig() string {
+	//fetch from: https://viewer.gcsim.workers.dev/gcsimdb
+	var data []DBData
+	getJson("https://viewer.gcsim.workers.dev/gcsimdb", &data)
+	for _, v := range data {
+		match := true
+		for _, c := range team {
+			if !strings.Contains(v.Config, c) {
+				match = false
+				break
+			}
+		}
+		if match {
+			return v.Config
+		}
+	}
+
+	fmt.Printf("no gcsim db entry found for %v", team)
+	return ""
+}
+
+func personalizeConfig(config string) string {
+	if justgenartis {
+		return config
+	}
+
+	lines := strings.Split(config, "\n")
+
+	for i := range lines { //remove all set and stats lines
+		if strings.Contains(lines[i], "char lvl") || strings.Contains(lines[i], "add set") {
+			lines[i] = ""
+		} else if strings.Contains(lines[i], "add weapon") || strings.Contains(lines[i], "add stats") {
+			lines[i] = ""
+		}
+	}
+
+	lines = append(lines, "energy every interval=69,420 amount=100;")
+
+	for i := range team {
+		charinfo := good[strings.Index(good, "key\":\""+GOchars[getCharID(team[i])]):]
+		charinfo = charinfo[strings.Index(charinfo, "level")+1:]
+		lvl := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		//0 20 1 40 2 50 3 60 4 70 5 80 6 90
+		charinfo = charinfo[strings.Index(charinfo, "ascension")+1:]
+		maxlvl, _ := strconv.Atoi(charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")])
+		maxlvl = maxlvl*10 + 30
+		if maxlvl == 30 {
+			maxlvl = 20
+		}
+		charinfo = charinfo[strings.Index(charinfo, "talent")+1:]
+		charinfo = charinfo[strings.Index(charinfo, "auto")+1:]
+		aa := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		charinfo = charinfo[strings.Index(charinfo, "skill")+1:]
+		e := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		charinfo = charinfo[strings.Index(charinfo, "burst")+1:]
+		q := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, "}")]
+		charinfo = charinfo[strings.Index(charinfo, "constellation")+1:]
+		c := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		for j := range lines { //we do this so that the characters are declared in the right order, otherwise sim orders them based on action list which messes things up
+			if lines[j] == "" {
+				lines[j] = team[i] + " char lvl=" + lvl + "/" + strconv.Itoa(maxlvl) + " cons=" + c + " talent=" + aa + "," + e + "," + q + ";"
+				break
+			}
+		}
+
+		artisets := []string{"", "", "", "", ""}
+		ascount := []int{0, 0, 0, 0, 0}
+		ttlsubs := newsubs()
+		for j := 0; j < 5; j++ {
+			charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-250:]
+			if !strings.Contains(charinfo[250:], "weapons") { //strings.Index(charinfo, ",")-1 < 0 {
+				break //this means no more artis found
+			}
+			//fmt.Printf("%v\n", charinfo[:300])
+			charinfo = charinfo[strings.Index(charinfo, "setKey")+1:]
+			set := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+			for k, s := range artisets {
+				if s == set {
+					ascount[k]++
+					break
+				} else if s == "" {
+					artisets[k] = set
+					ascount[k]++
+					break
+				}
+			}
+			//this basically assumes mainstats for lvl 20 atm
+			charinfo = charinfo[strings.Index(charinfo, "mainStatKey")+1:]
+			msk := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+			ttlsubs[getStatID(msk)] += msv[getStatID(msk)]
+			for k := 0; k < 4; k++ {
+				charinfo = charinfo[strings.Index(charinfo, "key")+1:]
+				ssk := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+				if ssk == "" {
+					continue
+				}
+				charinfo = charinfo[strings.Index(charinfo, "value")+1:]
+				ssv := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, "}")]
+				ssvf64, _ := strconv.ParseFloat(ssv, 64)
+				ttlsubs[getStatID(ssk)] += ssvf64 / float64(ispct[getStatID(ssk)])
+			}
+			charinfo = charinfo[strings.Index(charinfo, "lock")+1:]
+		}
+		lines = append(lines, team[i]+" add stats "+torolls(ttlsubs)+";")
+		for j := range ascount {
+			if ascount[j] >= 2 {
+				additional := ""
+				if artisets[j] == "HuskOfOpulentDreams" {
+					additional = " +params=[stacks=4]"
+				}
+				count := "2"
+				if ascount[j] >= 4 {
+					count = "4"
+				}
+				lines = append(lines, team[i]+" add set=\""+strings.ToLower(artisets[j])+"\" count="+count+additional+";")
+			}
+		}
+		//purposely avoid filtering to only the weapon section here, so that it errors if theres another arti with this location
+		charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-100:]
+		charinfo = charinfo[strings.Index(charinfo, "key")+1:]
+		wep := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
+		charinfo = charinfo[strings.Index(charinfo, "level")+1:]
+		lvl = charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		//0 20 1 40 2 50 3 60 4 70 5 80 6 90
+		charinfo = charinfo[strings.Index(charinfo, "ascension")+1:]
+		maxlvl, _ = strconv.Atoi(charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")])
+		maxlvl = maxlvl*10 + 30
+		if maxlvl == 30 {
+			maxlvl = 20
+		}
+		charinfo = charinfo[strings.Index(charinfo, "refinement")+1:]
+		r := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
+		additional := ""
+		if wep == "SerpentSpine" {
+			additional = " +params=[stacks=5]"
+		}
+		lines = append(lines, team[i]+" add weapon=\""+strings.ToLower(wep)+"\" refine="+r+" lvl="+lvl+"/"+strconv.Itoa(maxlvl)+additional+";")
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+var myClient = &http.Client{Timeout: 10 * time.Second}
+
+func getJson(url string, target interface{}) error {
+	r, err := myClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer r.Body.Close()
+
+	return json.NewDecoder(r.Body).Decode(target)
 }
 
 func run() error {
@@ -80,20 +277,24 @@ func run() error {
 		}
 	}
 
-	if referencesim == "" {
-		return errors.New("please input your simulation by using url=\"linkhere\"!")
+	if referencesim == "" && dbconfig == "" {
+		return errors.New("please input either your team with -team or your simulation with -url!")
 	}
 
 	//make a tmp folder if it doesn't exist
 	if _, err := os.Stat("./tmp"); !os.IsNotExist(err) {
-		fmt.Println("tmp folder already exists, deleting...")
+		//fmt.Println("tmp folder already exists, deleting...")
 		// path/to/whatever exists
 		os.RemoveAll("./tmp/")
 	}
 	os.Mkdir("./tmp", 0755)
 
-	//get json data from url
-	data := readURL(referencesim)
+	var data jsondata
+	if dbconfig == "" {
+		data = readURL(referencesim)
+	} else {
+		data = runSim(dbconfig)
+	}
 	fmt.Println("running tests...")
 
 	//get baseline result
@@ -112,10 +313,29 @@ func run() error {
 	return nil
 }
 
+func processdomstring() { //this is ugly
+	domains = strings.Split(domstring, ",")
+	for i := range domains {
+		if strings.Contains(domains[i], "(") {
+			doartisfor := domains[i][strings.Index(domains[i], "(")+1 : len(domains[i])-1]
+			domains[i] = domains[i][:strings.Index(domains[i], "(")]
+			settings := ""
+			if strings.Contains(doartisfor, "|") {
+				settings = doartisfor[strings.Index(doartisfor, "|")+1:]
+				doartisfor = doartisfor[:strings.Index(doartisfor, "|")]
+			}
+			manualOverride[i] = settings
+			optifor[i] = doartisfor
+		}
+		if optiall {
+			optifor[i] = optiorder[i]
+		}
+	}
+}
+
 func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talents that are not used in the config
 	tests := make([]test, 0)
 	for i, c := range data.Characters { //should split this into functions
-
 		//add level tests
 		newlevel := (c.Level/10 + 1) * 10
 		if newlevel < 40 && newlevel != 20 {
@@ -125,8 +345,11 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 		if newmax < 40 {
 			newmax = 40 //could just do this with math.max, but it require floats for some reason
 		}
-		if newlevel > 90 {
+		if newlevel >= 90 {
 			newlevel = 90
+			if mode85 && c.Level < 85 {
+				newlevel = 85
+			}
 		}
 		//fmt.Printf("%v", c)
 		if c.Level < 90 && c.Level != c.MaxLvl { //levelup test
@@ -135,6 +358,9 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 			newmax -= 10
 			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
 			newlevel -= 10
+			if newlevel == 75 {
+				newlevel += 5
+			}
 		}
 		if c.MaxLvl < 90 { //ascension test
 			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
@@ -150,8 +376,8 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 			lvlneed := 10*(t/2) + 50
 			if c.MaxLvl < lvlneed { //talent test that requires ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 1, newmax - 10, newmax}})
-			} else if c.MaxLvl >= 70 && t < 6 { //new: upgrade talents below 6 to 6 if possible, because 1->2 is too small to accurately say anything
-				tests = append(tests, test{"talent", []int{i, j, 6, 0, -2, -2}})
+			} else if c.MaxLvl >= 70 && t < mode6 && mode6 != 0 { //new: upgrade talents below 6 to 6 if possible, because 1->2 is too small to accurately say anything
+				tests = append(tests, test{"talent", []int{i, j, mode6, 0, -2, -2}})
 			} else { //talent test without ascension
 				tests = append(tests, test{"talent", []int{i, j, t + 1, 0, -2, -2}})
 			}
@@ -166,9 +392,6 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 		if newmax < 40 {
 			newmax = 40 //could just do this with math.max, but it require floats for some reason
 		}
-		if newmax > 90 {
-			newmax = 90
-		}
 		if newlevel > 90 {
 			newlevel = 90
 		}
@@ -177,22 +400,79 @@ func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talen
 		} else if c.Weapon.Level < 90 { //levelup and ascension test
 			newmax -= 10
 			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
+			newlevel -= 10
+			if newlevel == 30 {
+				newlevel -= 10
+			}
 		}
 		if c.Weapon.MaxLvl < 90 { //ascension test
 			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
 		}
+
+		//add artifact test
+		//tests = append(tests, test{"artifact", []int{i}})
 	}
+
+	//if only artis, remove all the tests above
+	if artisonly {
+		tests = make([]test, 0)
+	}
+
+	//artifact tests
+	makeOptiOrder(data) //generate the order in which to optimize the chars
+	processdomstring()
+	if domains[0] == "" { //if the user didnt specify, farm the sim domains
+		//todo
+	} else {
+		for i, d := range domains {
+			tests = append(tests, test{"artifact", []int{domainid(d), i}})
+		}
+	}
+
 	return tests
 }
 
-func rarity(wep string) int {
-	// for _, w := range weps {
-	// 	if w.Name == wep {
-	// 		return w.Rarity
-	// 	}
-	// }
-	//fmt.Printf("weapon not found: %v", wep)
+func makeOptiOrder(data jsondata) { //sort the chars by dps in refsim to determine optimization order
+	dps := []float64{-1.0, -1.0, -1.0, -1.0}
+	for i := range data.CharDPS { //sort the dps's... right now using dps vs primary target, should use their ttl dps
+		for j := range dps {
+			if data.CharDPS[i].DPS1.Mean > dps[j] {
+				for k := 3; k > j; k-- {
+					dps[k] = dps[k-1]
+				}
+				dps[j] = data.CharDPS[i].DPS1.Mean
+				break
+			}
+		}
+	}
 
+	for i, c := range data.Characters { //now sort the names accordingly. could probably do both at once with better code
+		for j := range dps {
+			if data.CharDPS[i].DPS1.Mean == dps[j] {
+				optiorder[j] = c.Name
+			}
+		}
+	}
+}
+
+func domainid(dom string) int { //returns the internal id for an artifact's domain
+	id := -1
+	for i, a := range artiabbrs {
+		if dom == a {
+			id = i
+		}
+	}
+
+	if id == -1 {
+		fmt.Printf("no domain found for %v", dom)
+		return -1
+	}
+
+	id = (id / 2) * 2 //if it's odd, subtract one
+	return id
+}
+
+func rarity(wep string) int {
 	jsn, err := os.ReadFile("./wep/" + wep + ".json")
 	if err != nil {
 		fmt.Println(err)
@@ -203,6 +483,9 @@ func rarity(wep string) int {
 		fmt.Println(err)
 	}
 	data.Rarity, err = strconv.Atoi(data.Raritys)
+	if data.Rarity < 3 {
+		data.Rarity = 3
+	}
 	return data.Rarity
 }
 
@@ -247,33 +530,6 @@ func download(path string, url string) error {
 	return errors.Wrap(err, "")
 }
 
-/*type pack struct {
-	Author      string `yaml:"author" json:"author"`
-	Config      string `yaml:"config" json:"config"`
-	Description string `yaml:"description" json:"description"`
-	//the following are machine generated fields
-	Hash      string  `yaml:"hash" json:"hash"`
-	Team      []char  `yaml:"team" json:"team"`
-	DPS       float64 `yaml:"dps" json:"dps"`
-	Mode      string  `yaml:"mode" json:"mode"`
-	Duration  float64 `yaml:"duration" json:"duration"`
-	NumTarget int     `yaml:"target_count" json:"target_count"`
-	ViewerKey string  `yaml:"viewer_key" json:"viewer_key"`
-	//unexported stuff
-	gzPath   string
-	filepath string
-	changed  bool
-}*/
-
-/*type char struct {
-	Name    string       `yaml:"name" json:"name"`
-	Con     int          `yaml:"con" json:"con"`
-	Weapon  string       `yaml:"weapon" json:"weapon"`
-	Refine  int          `yaml:"refine" json:"refine"`
-	ER      float64      `yaml:"er" json:"er"`
-	Talents TalentDetail `yaml:"talents" json:"talents"`
-}*/
-
 type TalentDetail struct {
 	Attack int `json:"attack"`
 	Skill  int `json:"skill"`
@@ -298,7 +554,12 @@ type jsondata struct {
 	} `json:"char_details"`
 	DPSraw    FloatResult `json:"dps"`
 	NumTarget int         `json:"target_count"`
-	DPS       float64
+	CharDPS   []struct {
+		DPS1 FloatResult `json:"1"`
+		DPS2 FloatResult `json:"2"`
+		DPS3 FloatResult `json:"3"`
+	} `json:"damage_by_char_by_targets"`
+	DPS float64
 }
 
 type FloatResult struct {
@@ -309,7 +570,6 @@ type FloatResult struct {
 }
 
 type wepjson struct {
-	//Name   string `json:"name"`
 	Raritys string `json:"rarity"`
 	Rarity  int
 }
@@ -346,8 +606,6 @@ func readURL(url string) (data2 jsondata) {
 		log.Fatal(err)
 	}
 
-	//req.Header.Set("User-Agent", "spacecount-tutorial") // uh is this part important? i hope not
-
 	res, getErr := spaceClient.Do(req)
 	if getErr != nil {
 		log.Fatal(getErr)
@@ -374,7 +632,7 @@ func readURL(url string) (data2 jsondata) {
 	r, err2 := zlib.NewReader(bytes.NewReader(z))
 	if err2 != nil {
 		r, err2 = gzip.NewReader(bytes.NewReader(z))
-		if err != nil {
+		if err2 != nil {
 			fmt.Println(err2)
 			return
 		}
@@ -403,17 +661,18 @@ func readURL(url string) (data2 jsondata) {
 func runTest(t test, config string, baseline jsondata) (res result) {
 	var simdata jsondata
 
-	//fmt.Printf("\n\n%v", config)
 	switch t.typ {
 	case "baseline":
 		simdata = runSim(config)
 	case "level":
 		simdata = runSim(runLevelTest(t, config))
 	case "talent":
+		//fmt.Printf("%vt%v", t, config)
 		simdata = runSim(runTalentTest(t, config))
 	case "weapon":
 		simdata = runSim(runWeaponTest(t, config))
-	//case "artifact" in future... hopefully...
+	case "artifact":
+		simdata = runSim(runArtifactTest(t, config))
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -444,8 +703,13 @@ func desc(t test, sd jsondata) (dsc string) {
 		}
 		return sd.Characters[t.params[0]].Name + " " + talent + " to " + strconv.Itoa(t.params[2]) + ascension
 	case "weapon":
+		if sd.Characters[t.params[0]].Weapon.Name == "thrillingtalesofdragonslayers" { //ttds is too long and breaks the formatting, so we need a (ugly) manual override :derpfei:
+			return sd.Characters[t.params[0]].Name + "'s ttds to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
+		}
 		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
-	//case "artifact" in future... hopefully...
+	case "artifact":
+		//return sd.Characters[t.params[0]].Name + " artifacts"
+		return "farm " + artiabbrs[t.params[0]] + " domain for " + fmt.Sprintf("%.1f", float64(artifarmtime)/(9.0*1.07)) + " days"
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -458,10 +722,10 @@ var talentbks = []int{3, 6, 12, 18, 27, 36, 54, 108, 144}
 type materials struct {
 	mora        int
 	books       float64 //measured in purple books
-	bossmats    int     //for example, hoarfrost core. Currently we assume gemstones aren't important/worth counting resin for because of azoth dust, but in the future we should have options instead of assumptions.
+	bossmats    int     //for example, hoarfrost core. Currently we assume gemstones aren't important/worth counting resin for because of azoth dust, but in the future we could have options instead of assumptions.
 	talentbooks int     //measured in teachings
 	weaponmats  int     //measured in the lowest level
-	artifacts   int     //not used yet
+	artifacts   int
 }
 
 var wpmats = [][]int{{2, 2 * 3, 4 * 3, 2 * 9, 4 * 9, 3 * 27}, {3, 3 * 3, 6 * 3, 3 * 9, 6 * 9, 4 * 27}, {5, 5 * 3, 9 * 3, 5 * 9, 9 * 9, 6 * 27}}
@@ -475,15 +739,15 @@ func resin(t test, sd jsondata) (rsn float64) {
 		return -1
 	case "level":
 		mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[1]-1) / PurpleBookXP
-		mats.mora = int(math.Floor(mats.books / 5.0))
+		mats.mora = int(math.Floor(mats.books/5.0)) * PurpleBookXP
 		if t.params[2] != sd.Characters[t.params[0]].MaxLvl { //if we ascended
 			mats.mora += 20000 * (t.params[2] - 30) / 10
 			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
 		}
 	case "talent":
-		if t.params[2] == 6 { //this whole function is ugly, but this part especially. functionality first tho
+		if t.params[2] == mode6 && t.params[3] == 0 { //this whole function is ugly, but this part especially. functionality first tho
 			talents := []int{sd.Characters[t.params[0]].Talents.Attack, sd.Characters[t.params[0]].Talents.Skill, sd.Characters[t.params[0]].Talents.Burst}
-			for i := talents[t.params[1]] + 1; i <= 6; i++ {
+			for i := talents[t.params[1]] + 1; i <= mode6; i++ {
 				mats.mora += talentmora[i-2] * 100
 				mats.talentbooks += talentbks[i-2]
 			}
@@ -492,7 +756,7 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.talentbooks += talentbks[t.params[2]-2]
 			if t.params[3] == 1 {
 				mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[4]-1) / PurpleBookXP
-				mats.mora += int(math.Floor(mats.books / 5.0))
+				mats.mora += int(math.Floor(mats.books/5.0)) * PurpleBookXP
 				mats.mora += 20000 * (t.params[5] - 30) / 10
 				mats.bossmats += int(math.Floor((float64(t.params[5])-30.0)/10.0*(float64(t.params[5])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[5])-80.0)/5.0)
 			}
@@ -503,7 +767,8 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.weaponmats += wpmats[t.params[1]-3][(t.params[3]-30)/10-1]
 			mats.mora += wpmora[t.params[1]-3][(t.params[3]-30)/10-1]
 		}
-	//case "artifact" in future... hopefully...
+	case "artifact":
+		mats.artifacts += artifarmtime
 	default:
 		fmt.Printf("invalid test type %v??", t.typ)
 	}
@@ -530,6 +795,7 @@ func resinformats(mats materials) (rsn float64) {
 	resin += float64(mats.bossmats) / resinrates[2]
 	resin += float64(mats.talentbooks) / resinrates[3]
 	resin += float64(mats.weaponmats) / resinrates[4]
+	resin += float64(mats.artifacts) / resinrates[5]
 	return resin
 }
 
@@ -610,6 +876,512 @@ func runWeaponTest(t test, config string) (c string) { //params for weapon test:
 	return strings.Join(lines, "\n")
 }
 
+type subrolls struct {
+	Atk  float64
+	AtkP float64
+	HP   float64
+	HPP  float64
+	Def  float64
+	DefP float64
+	EM   float64
+	ER   float64
+	CR   float64
+	CD   float64
+}
+
+func runArtifactTest(t test, config string) (c string) { //params for artifact test: 0: domainid, 1: position in domain q
+	lines := strings.Split(config, "\n")
+
+	for i := range lines { //remove all set and stats lines
+		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
+			skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
+			if strings.Contains(optifor[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) || optifor[t.params[1]] == "" {
+				skip = false
+			}
+			if skip {
+				continue
+			}
+			lines[i] = ""
+		} else if strings.Contains(lines[i], "add set") {
+			if strings.Contains(manualOverride[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) {
+				lines[i] = ""
+			}
+		}
+	}
+
+	farmJSONs(t.params[0])
+	for i := range optiorder {
+		skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
+		if strings.Contains(optifor[t.params[1]], optiorder[i]) || optifor[t.params[1]] == "" {
+			skip = false
+		}
+		if skip {
+			continue
+		}
+		lines = append(lines, makeNewLines(i, t.params[1]))
+	}
+
+	return strings.Join(lines, "\n")
+}
+
+func makeNewLines(c, d int) string {
+	runAutoGO(c)
+	return parseAGresults(c, d)
+}
+
+func runAutoGO(c int) {
+	makeTemplate(c)
+	cmd := exec.Command("cmd", "/C", "npm run start")
+	//cmd := exec.Command("npm run start")
+	cmd.Dir = "./AutoGO"
+	err := cmd.Run()
+	//fmt.Printf("%v", out)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	//bufio.NewReader(os.Stdin).ReadBytes('\n') //wait for the user to signify autogo is done by pressing enter
+}
+
+func makeTemplate(c int) {
+	//exec.Command("node AutoGO/src/createTemplate.js " + GOchars[getCharID(optiorder[c])] + " tmpl").Output()
+	cmd := exec.Command("cmd", "/C", "node src/createTemplate.js "+GOchars[getCharID(optiorder[c])]+" tmpl good/gojson0.json")
+	//cmd := exec.Command("npm run start")
+	cmd.Dir = "./AutoGO"
+	err := cmd.Run()
+	//fmt.Printf("%v", out)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+}
+
+func getCharID(name string) int {
+	for i, c := range simChars {
+		if c == name {
+			return simCharsID[i]
+		}
+	}
+	fmt.Printf("%v not found in list of sim characters", name)
+	return -1
+}
+
+type AGresult struct {
+	User string `json:"user"`
+	Data string `json:"data"`
+}
+
+func parseAGresults(c, d int) string {
+	jsonData, err := os.ReadFile("./AutoGO/output/tmpl.json")
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	var results []AGresult
+	err = json.Unmarshal([]byte(jsonData), &results)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+
+	avgsubs := newsubs()
+	for i := range results { //ttl up all the arti sim iters
+		newsubs := getAGsubs(results[i].Data, results[i].User)
+		//fmt.Printf("\n%v", newsubs)
+		avgsubs = addsubs(avgsubs, newsubs)
+		//deleteArtis(results[i].User, newsubs) //delete the artis chosen so that they're not selected again for another char
+	}
+
+	for i := range avgsubs { //complete the average
+		avgsubs[i] /= float64(len(results))
+		avgsubs[i] /= float64(ispct[i])
+	}
+
+	newlines := ""
+
+	//we really should count how many arti sims use each set bonus combo, and run sims for each of them (numsims = numregularsims(10000 usually) * % of trials that had this set bonus combo), then avg results..
+	//but for now... manual overrides when switching sets
+	if strings.Contains(manualOverride[d], optiorder[c]) {
+		//fmt.Printf("mo%v,oo%v", manualOverride[d], optiorder[c])
+		override := manualOverride[d][strings.Index(manualOverride[d], optiorder[c]):]
+		if strings.Contains(override, "&") {
+			override = override[:strings.Index(override, "&")]
+		}
+		if strings.Contains(override, "4") {
+			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "4")+1:]) + "\" count=4;\n"
+		} else {
+			override = override[strings.Index(override, "2")+1:]
+			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[:strings.Index(override, "2")]) + "\" count=2;\n"
+			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "2")+1:]) + "\" count=2;\n"
+		}
+	}
+
+	newlines += optiorder[c] + " add stats " + torolls(avgsubs) + ";"
+	return newlines
+}
+
+type GOarti struct {
+	SetKey      string `json:"setKey"`
+	Rarity      int    `json:"rarity"`
+	Level       int    `json:"level"`
+	SlotKey     string `json:"slotKey"`
+	MainStatKey string `json:"mainStatKey"`
+	Substats    []struct {
+		Key   string  `json:"key"`
+		Value float64 `json:"value"`
+	} `json:"substats"`
+	Location string `json:"location"`
+	Exclude  bool   `json:"exclude"`
+	Lock     bool   `json:"lock"`
+}
+
+func deleteArtis(file string, artistats []float64) {
+	f, err := os.ReadFile("./AutoGO/good/" + file)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	rawgood := string(f)
+	artisection := "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "weapons\"")-2]
+	if strings.Contains(file, "gojson0") {
+		//fmt.Printf("%v", artisection)
+	}
+	var artis []GOarti
+	err = json.Unmarshal([]byte(artisection), &artis)
+	//asnowman := subsubs(ar)
+	found := false
+	for i := range artis { //this currently works by looking for an arti with 3 stats = and 1 stat bigger (main stat), should be good enough?
+		toobig := 0
+		for j, s := range artis[i].Substats {
+			if s.Key == "" || artistats[getStatID(s.Key)] < s.Value {
+				break
+			} else if artistats[getStatID(s.Key)] > s.Value {
+				toobig++
+				if toobig >= 2 {
+					break
+				}
+			}
+			if j == 3 {
+				found = true
+				//fmt.Printf("\n%v", artis[i])
+				artis[i] = artis[len(artis)-1]
+				artis = artis[:len(artis)-1]
+			}
+		}
+		if found {
+			break
+		}
+	}
+
+	if !found {
+		fmt.Printf("failed to delete artifact %v,%v", artistats, err)
+	}
+
+	marsh, err := json.Marshal(artis)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	newas := string(marsh)
+	newas = newas[1:len(newas)-1] + "]"
+	newgood := rawgood[:strings.Index(rawgood, "artifacts\"")+12] + newas + rawgood[strings.Index(rawgood, "weapons\"")-2:]
+	err = os.WriteFile("./AutoGO/good/"+file, []byte(newgood), 0755)
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+}
+
+func getAGsubs(raw, file string) []float64 {
+	subs := newsubs()
+	//fmt.Printf("%v", raw)
+	artis := strings.Split(raw, "|")
+	for _, a := range artis {
+		if a == "" {
+			continue
+		}
+		asubs := newsubs()
+		stats := strings.Split(a, "~")
+		for _, s := range stats {
+			if s == "" {
+				continue
+			}
+			stattype := s[:strings.Index(s, "=")]
+			val := s[strings.Index(s, "=")+1:]
+			ispt := false
+			if strings.Contains(val, "%") {
+				val = val[:len(val)-1]
+				ispt = true
+			}
+			parse, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+			asubs[AGstatid(stattype, ispt)] += parse
+		}
+		deleteArtis(file, asubs) //delete the artis chosen so that they're not selected again for another char
+		subs = addsubs(subs, asubs)
+	}
+	return subs
+}
+
+func newsubs() []float64 { //empty stat array
+	return []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+}
+
+func AGstatid(key string, ispt bool) int {
+	for i, k := range AGstatKeys {
+		if k == key {
+			if i < 6 && ispt {
+				return i + 1 //the key for flat vs % hp, atk and def is the same, so we have to look at the value
+			}
+			return i
+		}
+	}
+	fmt.Printf("no stat found for the AG key %v", key)
+	return -1
+}
+
+func getStatID(key string) int {
+	for i, k := range statKey {
+		if k == key {
+			return i
+		}
+	}
+	fmt.Printf("%v not recognized as a key", key)
+	return -1
+}
+
+//ugly sorting code - sorts sim chars by dps, which is the order we should optimize them in (except this is a waste bc user has to specify anyway rn)
+/*chars := []string{"", "", "", ""}
+chardps := []float64{-1.0, -1.0, -1.0, -1.0}
+for i := range baseline.CharDPS {
+	chardps[i] = baseline.CharDPS[i].DPS1.Mean
+}
+sort.Float64s(chardps)
+for i := range baseline.Characters {
+	for j := range chardps {
+		if baseline.CharDPS[i].DPS1.Mean == chardps[j] {
+			chars[j] = baseline.Characters[i].Name
+		}
+	}
+}*/
+
+func farmJSONs(domain int) {
+	files, err := filepath.Glob("./AutoGO/good/gojson*")
+
+	if err != nil {
+		fmt.Printf("%v", err)
+	}
+	for _, f := range files {
+		os.Remove(f)
+	}
+	for j := 0; j < artifarmsims; j++ {
+		artistartpos := strings.Index(good, "artifacts\"") + 12
+		newartis := ""
+		for i := 0; i < artifarmtime; i++ {
+			newartis += randomGOarti(domain)
+		}
+		//fmt.Printf("%v", newartis)
+		gojsondata := good[:artistartpos] + newartis + good[artistartpos:]
+
+		//fmt.Printf("%v", gojsondata)
+		//fmt.Printf("./" + fmt.Sprintf("%0.f", float64(domain)) + "/gojson" + fmt.Sprintf("%.0f", float64(t)) + ".txt")
+		//os.WriteFile("./"+fmt.Sprintf("%0.f", float64(domain))+"/gojson"+fmt.Sprintf("%.0f", float64(t))+".txt", []byte(gojsondata), 0755)
+		os.WriteFile("./AutoGO/good/gojson"+fmt.Sprintf("%0.f", float64(j))+".json", []byte(gojsondata), 0755) //int->float->int shouldnt be necessary lol
+	}
+}
+
+var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence", "NoblesseOblige", "BloodstainedChivalry", "CrimsonWitchOfFlames", "Lavawalker"}
+var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr", "no", "bsc", "cw", "lw"}
+
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose", "jean", "chongyun", "yanfei", "keqing"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose", "Jean", "Chongyun", "Yanfei", "Keqing"}
+
+var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
+var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
+var AGstatKeys = []string{"Atk", "n/a", "hp", "n/a", "Def", "n/a", "ele_mas", "EnergyRecharge", "CritRate", "CritDMG", "HealingBonus", "pyro", "electro", "cryo", "hydro", "anemo", "geo", "physicalDmgBonus"}
+var msv = []float64{311.0, 0.466, 4780, 0.466, -1, 0.583, 187, 0.518, 0.311, 0.622, 0.359, 0.466, 0.466, 0.466, 0.466, 0.466, 0.466, 0.583} //def% heal and phys might be wrong
+var ispct = []int{1, 100, 1, 100, 1, 100, 1, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100}
+
+func gcsimArtiName(abbr string) string {
+	for i, a := range artiabbrs {
+		if a == abbr {
+			return strings.ToLower(artinames[i])
+		}
+	}
+	fmt.Printf("arti abbreviation %v not recognized", abbr)
+	return ""
+}
+
+func randomGOarti(domain int) string {
+	arti := "{\"setKey\":\""
+	arti += artinames[domain+rand.Intn(2)]
+	arti += "\",\"rarity\":5,\"level\":20,\"slotKey\":\""
+	artistats := randomarti()
+	arti += slotKey[int(artistats[10])]
+	arti += "\",\"mainStatKey\":\""
+	arti += statKey[int(artistats[11])]
+	arti += "\",\"substats\":["
+	curpos := 0
+	found := 0
+	for found < 4 {
+		if artistats[curpos] > 0 {
+			arti += "{\"key\":\""
+			arti += statKey[curpos]
+			arti += "\",\"value\":"
+			if ispct[curpos] == 1 {
+				arti += fmt.Sprintf("%.0f", standards[curpos]*artistats[curpos])
+			} else {
+				arti += fmt.Sprintf("%.1f", 100.0*standards[curpos]*artistats[curpos])
+			}
+			arti += "}"
+			if found < 3 {
+				arti += ","
+			}
+			found++
+		}
+		curpos++
+	}
+	arti += "],\"location\":\"\",\"exclude\":false,\"lock\":true},"
+	return arti
+}
+
+var standards = []float64{16.54, 0.0496, 253.94, 0.0496, 19.68, 0.062, 19.82, 0.0551, 0.0331, 0.0662}
+
+func torolls(subs []float64) string {
+	str := "atk=" + fmt.Sprintf("%f", subs[0])
+	str += " atk%=" + fmt.Sprintf("%f", subs[1])
+	str += " hp=" + fmt.Sprintf("%f", subs[2])
+	str += " hp%=" + fmt.Sprintf("%f", subs[3])
+	str += " def=" + fmt.Sprintf("%f", subs[4])
+	str += " def%=" + fmt.Sprintf("%f", subs[5])
+	str += " em=" + fmt.Sprintf("%f", subs[6])
+	str += " er=" + fmt.Sprintf("%f", subs[7])
+	str += " cr=" + fmt.Sprintf("%f", subs[8])
+	str += " cd=" + fmt.Sprintf("%f", subs[9])
+	str += " heal=" + fmt.Sprintf("%f", subs[10])
+	str += " pyro%=" + fmt.Sprintf("%f", subs[11])
+	str += " electro%=" + fmt.Sprintf("%f", subs[12])
+	str += " cryo%=" + fmt.Sprintf("%f", subs[13])
+	str += " hydro%=" + fmt.Sprintf("%f", subs[14])
+	str += " anemo%=" + fmt.Sprintf("%f", subs[15])
+	str += " geo%=" + fmt.Sprintf("%f", subs[16])
+	str += " phys%=" + fmt.Sprintf("%f", subs[17])
+	return str
+}
+
+func remove8(subs []float64) []float64 {
+	removed := 0
+	//this is ugly and probably not necessary, but i'm pre-empting issues with modifying newsubs also changing cursubs bc pointers idk
+	newsubs := []float64{subs[0], subs[1], subs[2], subs[3], subs[4], subs[5], subs[6], 0, subs[8], subs[9]}
+	tries := 0
+	for removed < 8 && tries < 1000 {
+		tries++
+		s := rand.Intn(10)
+		if newsubs[s] > 0.5 && s != 7 {
+			newsubs[s] = math.Max(newsubs[s]-1.0, 0.0)
+			removed++
+		}
+	}
+	if tries >= 1000 {
+		fmt.Printf("halp! start %v, got to %v, can't remove more!", subs, newsubs)
+	}
+
+	newsubs[7] = subs[7]
+	return newsubs
+}
+
+func addsubs(s1, s2 []float64) []float64 {
+	add := newsubs()
+	for i := range add {
+		add[i] = s1[i] + s2[i]
+	}
+	return add
+}
+
+func subsubs(s1, s2 []float64) []float64 {
+	sub := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i := range sub {
+		sub[i] = s1[i] - s2[i] //math.Max(0, s1[i]-s2[i])
+	}
+	return sub
+}
+
+func multsubs(s []float64, mult float64) []float64 {
+	sub := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	for i := range sub {
+		sub[i] = s[i] * mult
+	}
+	return sub
+}
+
+var subchance = []int{6, 4, 6, 4, 6, 4, 4, 4, 3, 3}
+var srolls = []float64{0.824, 0.941, 1.059, 1.176}
+
+/*type subrolls struct {
+	Atk  float64
+	AtkP float64
+	HP   float64
+	HPP  float64
+	Def  float64
+	DefP float64
+	EM   float64
+	ER   float64
+	CR   float64
+	CD   float64
+}*/ //then: heal, pyro,electro,cryo,hydro,anemo,geo,phys
+
+var rollints = []int{1, 1, 30, 80, 50}
+var mschance = [][]int{ //chance of mainstat based on arti type
+	{0, 0, 1},
+	{1},
+	{0, 8, 0, 8, 0, 8, 3, 3},
+	{0, 17, 0, 17, 0, 16, 2, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4},
+	{0, 11, 0, 11, 0, 11, 2, 0, 5, 5, 5},
+}
+
+func randomarti() []float64 {
+	arti := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	arti[10] = float64(rand.Intn(5)) //this is type, 0=flower, 1=feather, etc... all these type conversions can't be ideal, should do this a diff way
+	m := rand.Intn(rollints[int(arti[10])])
+	ttl := 0
+	for i := range mschance[int(arti[10])] {
+		ttl += mschance[int(arti[10])][i]
+		if m < ttl {
+			arti[11] = float64(i)
+			break
+		}
+	}
+
+	count := 0
+	for count < 4 {
+		s := rand.Intn(44)
+		ttl = 0
+		for i := range subchance {
+			ttl += subchance[i]
+			if s < ttl {
+				s = i
+				break
+			}
+		}
+		if arti[s] == 0 {
+			count++
+			arti[s] += srolls[rand.Intn(4)]
+		}
+	}
+
+	upgrades := 0
+	if rand.Float64() < 0.2 {
+		upgrades = -1
+	}
+	for upgrades < 4 {
+		s := rand.Intn(10)
+		if arti[s] != 0 {
+			upgrades++
+			arti[s] += srolls[rand.Intn(4)]
+		}
+	}
+
+	//arti[7] = 0 //no er allowed
+
+	return arti
+}
+
 func getVersion() (string, error) {
 	fmt.Println("Getting last hash...")
 	out, err := exec.Command("./gcsim", "-version").Output()
@@ -619,19 +1391,6 @@ func getVersion() (string, error) {
 		return "", err
 	}
 	return hash, nil
-}
-
-func readWepData() []wepjson {
-	jsn, err := os.ReadFile("weps.json")
-	wjss := make([]wepjson, 0)
-	json.Unmarshal(jsn, &wjss)
-	//wjs := wepjson{}
-
-	if err != nil {
-		fmt.Print("idk halp")
-	}
-	fmt.Printf("%v", wjss)
-	return wjss
 }
 
 func runSim(cfg string) (data2 jsondata) {
