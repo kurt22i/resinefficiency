@@ -1,5 +1,5 @@
 # resinefficiency
- 
+
 this tool calculates the most resin efficient upgrades for your team by calculating the DPS increase/resin cost of each upgrade, including farming artifacts. It aims to help answer questions like "what's the best way to improve my team?" and "am i really gaining anything from farming this domain, or is it time to stop?". I don't really know where I'm going with this project yet and it might continue to be developed or it might not, idk. I'm not really a programmer and the code is a huge mess, which makes it hard to add new features. If you want to lose your sanity, PRs are welcome.
 
 # How to Use
