@@ -722,10 +722,10 @@ var talentbks = []int{3, 6, 12, 18, 27, 36, 54, 108, 144}
 type materials struct {
 	mora        int
 	books       float64 //measured in purple books
-	bossmats    int     //for example, hoarfrost core. Currently we assume gemstones aren't important/worth counting resin for because of azoth dust, but in the future we should have options instead of assumptions.
+	bossmats    int     //for example, hoarfrost core. Currently we assume gemstones aren't important/worth counting resin for because of azoth dust, but in the future we could have options instead of assumptions.
 	talentbooks int     //measured in teachings
 	weaponmats  int     //measured in the lowest level
-	artifacts   int     //not used yet
+	artifacts   int
 }
 
 var wpmats = [][]int{{2, 2 * 3, 4 * 3, 2 * 9, 4 * 9, 3 * 27}, {3, 3 * 3, 6 * 3, 3 * 9, 6 * 9, 4 * 27}, {5, 5 * 3, 9 * 3, 5 * 9, 9 * 9, 6 * 27}}
@@ -756,7 +756,7 @@ func resin(t test, sd jsondata) (rsn float64) {
 			mats.talentbooks += talentbks[t.params[2]-2]
 			if t.params[3] == 1 {
 				mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[4]-1) / PurpleBookXP
-				mats.mora += int(math.Floor(mats.books / 5.0))
+				mats.mora += int(math.Floor(mats.books/5.0)) * PurpleBookXP
 				mats.mora += 20000 * (t.params[5] - 30) / 10
 				mats.bossmats += int(math.Floor((float64(t.params[5])-30.0)/10.0*(float64(t.params[5])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[5])-80.0)/5.0)
 			}
@@ -1135,110 +1135,6 @@ func AGstatid(key string, ispt bool) int {
 	return -1
 }
 
-func getrolls(str string) []float64 {
-	rolls := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	str2 := str
-	var err error
-	// for(i:=0;i<10;i++) {
-	// 	rolls[i]=strconv.ParseFloat(str2[strings.Index(str2,"=")+1:strings.Index(str2,"=")+1])
-	// }
-	str2 = strings.Replace(str2, ";", " ", 1)
-	rolls[0], err = strconv.ParseFloat(str2[strings.Index(str2, "atk=")+4:strings.Index(str2[strings.Index(str2, "atk=")+1:], " ")+strings.Index(str2, "atk=")+1], 64)
-	if err != nil {
-		fmt.Printf("%v", err)
-	}
-	rolls[1], err = strconv.ParseFloat(str2[strings.Index(str2, "atk%=")+5:strings.Index(str2[strings.Index(str2, "atk%=")+1:], " ")+strings.Index(str2, "atk%=")+1], 64)
-	rolls[2], err = strconv.ParseFloat(str2[strings.Index(str2, "hp=")+3:strings.Index(str2[strings.Index(str2, "hp=")+1:], " ")+strings.Index(str2, "hp=")+1], 64)
-	rolls[3], err = strconv.ParseFloat(str2[strings.Index(str2, "hp%=")+4:strings.Index(str2[strings.Index(str2, "hp%=")+1:], " ")+strings.Index(str2, "hp%=")+1], 64)
-	rolls[4], err = strconv.ParseFloat(str2[strings.Index(str2, "def=")+4:strings.Index(str2[strings.Index(str2, "def=")+1:], " ")+strings.Index(str2, "def=")+1], 64)
-	rolls[5], err = strconv.ParseFloat(str2[strings.Index(str2, "def%=")+5:strings.Index(str2[strings.Index(str2, "def%=")+1:], " ")+strings.Index(str2, "def%=")+1], 64)
-	rolls[6], err = strconv.ParseFloat(str2[strings.Index(str2, "em=")+3:strings.Index(str2[strings.Index(str2, "em=")+1:], " ")+strings.Index(str2, "em=")+1], 64)
-	rolls[7], err = strconv.ParseFloat(str2[strings.Index(str2, "er=")+3:strings.Index(str2[strings.Index(str2, "er=")+1:], " ")+strings.Index(str2, "er=")+1], 64)
-	rolls[8], err = strconv.ParseFloat(str2[strings.Index(str2, "cr=")+3:strings.Index(str2[strings.Index(str2, "cr=")+1:], " ")+strings.Index(str2, "cr=")+1], 64)
-	rolls[9], err = strconv.ParseFloat(str2[strings.Index(str2, "cd=")+3:strings.Index(str2[strings.Index(str2, "cd=")+1:], " ")+strings.Index(str2, "cd=")+1], 64)
-
-	for i := range rolls {
-		rolls[i] /= standards[i]
-	}
-	return rolls
-}
-
-func simartiupgrades(cursubs []float64, domain, line int, baseline jsondata) string {
-
-	chr := "Ganyu"
-	if line == 8 {
-		chr = "KamisatoAyaka"
-	}
-	//fmt.Printf("%v%v", chr, line)
-	avgsubs := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	if false {
-		for i := 0; i < artifarmsims; i++ {
-			//avgsubs = addsubs(avgsubs, subsubs(farmartis(domain, i, baseline), cursubs))
-		}
-		for i := range avgsubs {
-			avgsubs[i] /= float64(artifarmsims)
-		}
-	} else {
-		count := 0
-		err := filepath.Walk("./use", func(path string, info os.FileInfo, err error) error {
-			if info.IsDir() {
-				return nil
-			}
-			//fmt.Printf("here")
-			file, err3 := os.ReadFile(path)
-			count++
-			if err3 != nil {
-				return errors.Wrap(err3, "")
-			}
-			//fmt.Printf(path)
-			strfile := string(file)
-			//fmt.Printf("%v", strings.Index(strfile, "location\":\""+chr))
-			//fmt.Printf("%v", strings.Index(strfile, "location\":\""+chr)-250)
-			for i := 0; i < 5; i++ {
-				//fmt.Printf("\n%v", i)
-				//fmt.Printf("\n%v", strings.Index(strfile, "location\":\""+chr))
-				//fmt.Printf("\n%v", strings.Index(strfile, "location\":\""+chr)-250)
-				strfile = strfile[strings.Index(strfile, "location\":\""+chr)-250:]
-				strfile = strfile[strings.Index(strfile, "mainStatKey")+14:]
-				msk := strfile[:strings.Index(strfile, "\"")]
-				if getStatID(msk) < 10 {
-					//fmt.Printf("%v\n", avgsubs)
-					avgsubs[getStatID(msk)] += msv[getStatID(msk)] / standards[getStatID(msk)]
-					//fmt.Printf("%v\n", avgsubs)
-				}
-				for j := 0; j < 4; j++ {
-					strfile = strfile[strings.Index(strfile, "key")+6:]
-					ssk := strfile[:strings.Index(strfile, "\"")]
-					//fmt.Printf("%v", ssk)
-					strfile = strfile[strings.Index(strfile, "value")+7:]
-					ssv := strfile[:strings.Index(strfile, "}")]
-					//fmt.Printf("%v", ssv)
-					ssvv, err2 := strconv.ParseFloat(ssv, 64)
-					if err2 != nil {
-						return errors.Wrap(err2, "")
-					}
-					avgsubs[getStatID(ssk)] += ssvv / standards[getStatID(ssk)] / float64(ispct[getStatID(ssk)])
-				}
-				strfile = strfile[20:]
-			}
-			//fmt.Printf("%v\n", avgsubs)
-			avgsubs = subsubs(avgsubs, cursubs)
-
-			return nil
-		})
-
-		if err != nil {
-			fmt.Printf("%v", err)
-		}
-		for i := range avgsubs {
-			avgsubs[i] /= float64(count)
-		}
-	}
-
-	//fmt.Printf("%v\n", avgsubs)
-	return torolls(addsubs(cursubs, avgsubs))
-}
-
 func getStatID(key string) int {
 	for i, k := range statKey {
 		if k == key {
@@ -1279,39 +1175,28 @@ func farmJSONs(domain int) {
 		for i := 0; i < artifarmtime; i++ {
 			newartis += randomGOarti(domain)
 		}
+		//fmt.Printf("%v", newartis)
 		gojsondata := good[:artistartpos] + newartis + good[artistartpos:]
 
+		//fmt.Printf("%v", gojsondata)
 		//fmt.Printf("./" + fmt.Sprintf("%0.f", float64(domain)) + "/gojson" + fmt.Sprintf("%.0f", float64(t)) + ".txt")
 		//os.WriteFile("./"+fmt.Sprintf("%0.f", float64(domain))+"/gojson"+fmt.Sprintf("%.0f", float64(t))+".txt", []byte(gojsondata), 0755)
 		os.WriteFile("./AutoGO/good/gojson"+fmt.Sprintf("%0.f", float64(j))+".json", []byte(gojsondata), 0755) //int->float->int shouldnt be necessary lol
 	}
 }
 
-var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence"}
-var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr"}
+var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence", "NoblesseOblige", "BloodstainedChivalry", "CrimsonWitchOfFlames", "Lavawalker"}
+var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr", "no", "bsc", "cw", "lw"}
 
-var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose", "jean", "chongyun"}
-var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}
-var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose", "Jean", "Chongyun"}
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose", "jean", "chongyun", "yanfei", "keqing"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose", "Jean", "Chongyun", "Yanfei", "Keqing"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
 var AGstatKeys = []string{"Atk", "n/a", "hp", "n/a", "Def", "n/a", "ele_mas", "EnergyRecharge", "CritRate", "CritDMG", "HealingBonus", "pyro", "electro", "cryo", "hydro", "anemo", "geo", "physicalDmgBonus"}
 var msv = []float64{311.0, 0.466, 4780, 0.466, -1, 0.583, 187, 0.518, 0.311, 0.622, 0.359, 0.466, 0.466, 0.466, 0.466, 0.466, 0.466, 0.583} //def% heal and phys might be wrong
 var ispct = []int{1, 100, 1, 100, 1, 100, 1, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100}
-
-/*type subrolls struct {
-	Atk  float64
-	AtkP float64
-	HP   float64
-	HPP  float64
-	Def  float64
-	DefP float64
-	EM   float64
-	ER   float64
-	CR   float64
-	CD   float64
-}*/ //then: heal, pyro,electro,cryo,hydro,anemo,geo,phys
 
 func gcsimArtiName(abbr string) string {
 	for i, a := range artiabbrs {
