@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Xiangling",
+  "char": "Sucrose",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -8,25 +8,111 @@
     "version": 1,
     "characters": [
       {
-        "key": "Bennett",
-        "level": 90,
-        "ascension": 6,
+        "key": "Barbara",
+        "level": 60,
+        "ascension": 3,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "Bennett": {
-            "activeInArea": "activeInArea"
-          },
-          "NoblesseOblige": {
-            "set4": "on"
+          "MaidenBeloved": {
+            "state": "on"
           }
         },
         "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 1,
-          "skill": 1,
-          "burst": 9
+          "auto": 2,
+          "skill": 4,
+          "burst": 3
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {},
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "skill",
+            "cregen"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Noelle",
+        "level": 60,
+        "ascension": 4,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {},
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 4,
+          "skill": 4,
+          "burst": 4
+        },
+        "infusionAura": "",
+        "constellation": 2,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": false,
+        "favorite": false
+      },
+      {
+        "key": "Bennett",
+        "level": 80,
+        "ascension": 5,
+        "hitMode": "avgHit",
+        "reactionMode": "pyro_vaporize",
+        "conditional": {
+          "NoblesseOblige": {},
+          "Bennett": {
+            "activeInArea": "activeInArea"
+          }
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 3,
+          "skill": 8,
+          "burst": 8
         },
         "infusionAura": "",
         "constellation": 5,
@@ -47,10 +133,172 @@
           ],
           "statFilters": {},
           "mainStatKeys": {
+            "sands": [
+              "atk_",
+              "eleMas"
+            ],
+            "goblet": [
+              "pyro_dmg_",
+              "atk_",
+              "eleMas"
+            ],
+            "circlet": [
+              "critDMG_",
+              "atk_",
+              "critRate_"
+            ]
+          },
+          "optimizationTarget": [
+            "skill",
+            "press"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 1,
+          "levelHigh": 20
+        },
+        "team": [
+          "Xiangling",
+          "Sucrose",
+          "Xingqiu"
+        ],
+        "compareData": true,
+        "favorite": false
+      },
+      {
+        "key": "Xingqiu",
+        "level": 80,
+        "ascension": 5,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "Xingqiu": {
+            "c2": "on"
+          },
+          "LionsRoar": {
+            "BaneOfFireAndThunder": "on"
+          },
+          "NoblesseOblige": {
+            "set4": "on"
+          }
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 3,
+          "skill": 6,
+          "burst": 8
+        },
+        "infusionAura": "",
+        "constellation": 6,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "NoblesseOblige",
+              "num": 4
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 183.3
+          },
+          "mainStatKeys": {
             "sands": [],
             "goblet": [],
             "circlet": []
           },
+          "optimizationTarget": [
+            "burst",
+            "dmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        },
+        "team": [
+          "Xiangling",
+          "Sucrose",
+          "Bennett"
+        ],
+        "compareData": true,
+        "favorite": false
+      },
+      {
+        "key": "Lisa",
+        "level": 50,
+        "ascension": 2,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {},
+        "bonusStats": {
+          "burst_dmg_": 17.4,
+          "atk_": 45,
+          "atk": 928
+        },
+        "enemyOverride": {},
+        "talent": {
+          "auto": 2,
+          "skill": 2,
+          "burst": 2
+        },
+        "infusionAura": "",
+        "constellation": 1,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": false,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 216.7
+          },
+          "mainStatKeys": {
+            "sands": [
+              "enerRech_"
+            ],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "reaction",
+            "overloaded"
+          ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
           "useEquippedArts": true,
@@ -61,25 +309,192 @@
           "compareBuild": true,
           "levelLow": 0,
           "levelHigh": 20
+        }
+      },
+      {
+        "key": "Traveler",
+        "level": 70,
+        "ascension": 5,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {},
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 4,
+          "skill": 5,
+          "burst": 4
         },
+        "infusionAura": "",
+        "constellation": 6,
         "team": [
           "",
           "",
           ""
         ],
         "compareData": false,
-        "favorite": false
+        "favorite": false,
+        "elementKey": "geo"
       },
       {
-        "key": "KaedeharaKazuha",
-        "level": 90,
-        "ascension": 6,
+        "key": "Sucrose",
+        "level": 80,
+        "ascension": 5,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "ViridescentVenerer": {}
+          "ThrillingTalesOfDragonSlayers": {},
+          "Sucrose": {
+            "skillHit": "hit",
+            "swirl": "hydro"
+          },
+          "ViridescentVenerer": {
+            "swirlhydro": "hydro",
+            "swirlpyro": "pyro"
+          }
         },
-        "bonusStats": {},
+        "bonusStats": {
+          "atk_": 45,
+          "atk": 928
+        },
+        "enemyOverride": {},
+        "talent": {
+          "auto": 2,
+          "skill": 2,
+          "burst": 2
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "ViridescentVenerer",
+              "num": 4
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {},
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "reaction",
+            "hydroSwirl"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "",
+          "compareBuild": true,
+          "levelLow": 1,
+          "levelHigh": 20
+        },
+        "team": [
+          "Xiangling",
+          "Bennett",
+          "Xingqiu"
+        ],
+        "compareData": true,
+        "favorite": false
+      },
+      {
+        "key": "Beidou",
+        "level": 70,
+        "ascension": 5,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "Beidou": {},
+          "SerpentSpine": {
+            "Wavesplitter": "4"
+          }
+        },
+        "bonusStats": {
+          "atk_": 20
+        },
+        "enemyOverride": {
+          "electro_enemyRes_": -30
+        },
+        "talent": {
+          "auto": 1,
+          "skill": 1,
+          "burst": 7
+        },
+        "infusionAura": "",
+        "constellation": 6,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 131
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "burst",
+            "lightningDmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "",
+          "compareBuild": true,
+          "levelLow": 1,
+          "levelHigh": 20
+        },
+        "team": [
+          "",
+          "",
+          "Fischl"
+        ],
+        "compareData": true,
+        "favorite": false
+      },
+      {
+        "key": "Keqing",
+        "level": 40,
+        "ascension": 1,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "Instructor": {
+            "set4": "on"
+          }
+        },
+        "bonusStats": {
+          "atk_": 45,
+          "atk": 928
+        },
         "enemyOverride": {},
         "talent": {
           "auto": 1,
@@ -98,7 +513,7 @@
         "buildSettings": {
           "setFilters": [
             {
-              "key": "ViridescentVenerer",
+              "key": "Instructor",
               "num": 4
             },
             {
@@ -110,30 +525,15 @@
               "num": 0
             }
           ],
-          "statFilters": {
-            "enerRech_": 150
-          },
+          "statFilters": {},
           "mainStatKeys": {
-            "sands": [
-              "atk_",
-              "enerRech_",
-              "eleMas"
-            ],
-            "goblet": [
-              "eleMas",
-              "anemo_dmg_",
-              "atk_"
-            ],
-            "circlet": [
-              "atk_",
-              "critRate_",
-              "eleMas",
-              "critDMG_"
-            ]
+            "sands": [],
+            "goblet": [],
+            "circlet": []
           },
           "optimizationTarget": [
-            "burst",
-            "dot"
+            "reaction",
+            "overloaded"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -148,40 +548,196 @@
         }
       },
       {
-        "key": "Albedo",
-        "level": 90,
+        "key": "Rosaria",
+        "level": 70,
+        "ascension": 5,
+        "hitMode": "avgHit",
+        "reactionMode": "cryo_melt",
+        "conditional": {
+          "Rosaria": {
+            "RosariaA4": "on",
+            "DilucC6": "on"
+          },
+          "NoblesseOblige": {
+            "set4": "on"
+          },
+          "DragonsBane": {
+            "BaneOfFlameAndWater": "on"
+          },
+          "Deathmatch": {
+            "stack": "moreThanOne"
+          }
+        },
+        "bonusStats": {
+          "atk_": 45,
+          "atk": 928
+        },
+        "enemyOverride": {},
+        "talent": {
+          "auto": 4,
+          "skill": 7,
+          "burst": 8
+        },
+        "infusionAura": "",
+        "constellation": 6,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 116.5
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "burst",
+            "dotDmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 1,
+          "levelHigh": 20
+        },
+        "team": [
+          "Chongyun",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false
+      },
+      {
+        "key": "KamisatoAyaka",
+        "level": 80,
         "ascension": 6,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "CinnabarSpindle": {
-            "SpotlessHeart": "on"
+          "resonance": {
+            "ShatteringIce": "on"
           },
-          "HuskOfOpulentDreams": {
-            "stack": "4"
+          "BlizzardStrayer": {
+            "state": "frozen"
           },
-          "Albedo": {}
+          "KamisatoAyaka": {
+            "afterSkillA1": "afterSkill",
+            "afterSprint": "afterSprint",
+            "afterApplySprint": "afterApplySprint"
+          }
         },
         "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 1,
-          "skill": 9,
-          "burst": 1
+          "auto": 5,
+          "skill": 5,
+          "burst": 9
         },
         "infusionAura": "",
-        "constellation": 0,
+        "constellation": 1,
         "team": [
-          "",
-          "",
-          ""
+          "Ganyu",
+          "SangonomiyaKokomi",
+          "Venti"
         ],
         "compareData": false,
         "favorite": false,
         "buildSettings": {
           "setFilters": [
             {
-              "key": "HuskOfOpulentDreams",
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 110
+          },
+          "mainStatKeys": {
+            "sands": [
+              "atk_"
+            ],
+            "goblet": [
+              "atk_",
+              "cryo_dmg_"
+            ],
+            "circlet": [
+              "atk_",
+              "critRate_",
+              "critDMG_"
+            ]
+          },
+          "optimizationTarget": [
+            "burst",
+            "cutting"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 1,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "RaidenShogun",
+        "level": 80,
+        "ascension": 6,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "RaidenShogun": {
+            "burstResolve": "60",
+            "skillEyeTeam": "80",
+            "skillEye": "skillEye"
+          }
+        },
+        "bonusStats": {},
+        "enemyOverride": {
+          "electro_enemyRes_": 10,
+          "enemyLevel": 80
+        },
+        "talent": {
+          "auto": 1,
+          "skill": 8,
+          "burst": 10
+        },
+        "infusionAura": "",
+        "constellation": 2,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "EmblemOfSeveredFate",
               "num": 4
             },
             {
@@ -196,22 +752,22 @@
           "statFilters": {},
           "mainStatKeys": {
             "sands": [
-              "def_",
+              "atk_",
               "enerRech_"
             ],
             "goblet": [
-              "def_",
-              "geo_dmg_"
+              "atk_",
+              "electro_dmg_"
             ],
             "circlet": [
-              "def_",
+              "atk_",
               "critDMG_",
               "critRate_"
             ]
           },
           "optimizationTarget": [
-            "skill",
-            "blossom"
+            "burst",
+            "dmg"
           ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
@@ -221,30 +777,338 @@
           "maxBuildsToShow": 1,
           "plotBase": "enerRech_",
           "compareBuild": true,
-          "levelLow": 5,
+          "levelLow": 1,
+          "levelHigh": 20
+        },
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false
+      },
+      {
+        "key": "Fischl",
+        "level": 80,
+        "ascension": 5,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "TenacityOfTheMillelith": {
+            "skill": "cast"
+          }
+        },
+        "bonusStats": {
+          "atk_": 45,
+          "atk": 928
+        },
+        "enemyOverride": {},
+        "talent": {
+          "auto": 2,
+          "skill": 8,
+          "burst": 4
+        },
+        "infusionAura": "",
+        "constellation": 1,
+        "team": [
+          "",
+          "",
+          "Beidou"
+        ],
+        "compareData": true,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "TenacityOfTheMillelith",
+              "num": 4
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 122
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "skill",
+            "ozDmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Sayu",
+        "level": 60,
+        "ascension": 4,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {},
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 2,
+          "skill": 4,
+          "burst": 4
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": false,
+        "favorite": false
+      },
+      {
+        "key": "Jean",
+        "level": 70,
+        "ascension": 4,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "ViridescentVenerer": {
+            "swirlpyro": "pyro",
+            "swirlhydro": "hydro",
+            "swirlelectro": "electro"
+          },
+          "Jean": {},
+          "IronSting": {
+            "InfusionStinger": "1"
+          }
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 1,
+          "skill": 1,
+          "burst": 5
+        },
+        "infusionAura": "",
+        "constellation": 3,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "ViridescentVenerer",
+              "num": 4
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 166.1
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "reaction",
+            "pyroSwirl"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Ningguang",
+        "level": 20,
+        "ascension": 1,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {},
+        "bonusStats": {
+          "atk_": 65,
+          "atk": 928,
+          "all_dmg_": 15
+        },
+        "enemyOverride": {
+          "geo_enemyRes_": -30
+        },
+        "talent": {
+          "auto": 1,
+          "skill": 1,
+          "burst": 1
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {},
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "skill",
+            "dmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 1,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Zhongli",
+        "level": 74,
+        "ascension": 5,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "TenacityOfTheMillelith": {
+            "skill": "cast"
+          },
+          "Zhongli": {
+            "skill": "on"
+          }
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 1,
+          "skill": 8,
+          "burst": 1
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "TenacityOfTheMillelith",
+              "num": 4
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {},
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "skill",
+            "shield"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "critRate_",
+          "compareBuild": true,
+          "levelLow": 0,
           "levelHigh": 20
         }
       },
       {
         "key": "Xiangling",
-        "level": 90,
+        "level": 85,
         "ascension": 6,
         "hitMode": "avgHit",
         "reactionMode": "pyro_vaporize",
         "conditional": {
           "Xiangling": {
             "afterGuobaHit": "afterGuobaHit"
+          },
+          "DragonsBane": {
+            "BaneOfFlameAndWater": "on"
           }
         },
         "bonusStats": {},
         "enemyOverride": {},
         "talent": {
-          "auto": 9,
-          "skill": 9,
-          "burst": 10
+          "auto": 2,
+          "skill": 7,
+          "burst": 9
         },
         "infusionAura": "",
-        "constellation": 6,
+        "constellation": 4,
         "buildSettings": {
           "setFilters": [
             {
@@ -261,20 +1125,18 @@
             }
           ],
           "statFilters": {
-            "enerRech_": 150
+            "enerRech_": 176.9
           },
           "mainStatKeys": {
-            "sands": [
-              "eleMas",
-              "enerRech_",
+            "sands": [],
+            "goblet": [
+              "pyro_dmg_",
               "atk_"
             ],
-            "goblet": [
-              "pyro_dmg_"
-            ],
             "circlet": [
-              "critRate_",
-              "critDMG_"
+              "atk_",
+              "critDMG_",
+              "critRate_"
             ]
           },
           "optimizationTarget": [
@@ -287,32 +1149,101 @@
           "builds": [],
           "buildDate": 0,
           "maxBuildsToShow": 1,
-          "plotBase": "",
+          "plotBase": "enerRech_",
           "compareBuild": true,
-          "levelLow": 5,
+          "levelLow": 1,
           "levelHigh": 20
         },
         "team": [
-          "",
-          "",
-          ""
+          "Sucrose",
+          "Bennett",
+          "Xingqiu"
         ],
-        "compareData": false,
+        "compareData": true,
         "favorite": false
       },
       {
-        "key": "Xingqiu",
-        "level": 1,
-        "ascension": 0,
+        "key": "Chongyun",
+        "level": 20,
+        "ascension": 1,
         "hitMode": "avgHit",
-        "reactionMode": "",
-        "conditional": {},
-        "bonusStats": {},
+        "reactionMode": "cryo_melt",
+        "conditional": {
+          "Chongyun": {}
+        },
+        "bonusStats": {
+          "atk_": 45,
+          "atk": 928
+        },
         "enemyOverride": {},
         "talent": {
           "auto": 1,
           "skill": 1,
           "burst": 1
+        },
+        "infusionAura": "",
+        "constellation": 1,
+        "team": [
+          "Rosaria",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "EmblemOfSeveredFate",
+              "num": 2
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 192.3
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "burst",
+            "dmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Diona",
+        "level": 70,
+        "ascension": 4,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "Diona": {}
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 1,
+          "skill": 6,
+          "burst": 4
         },
         "infusionAura": "",
         "constellation": 0,
@@ -338,12 +1269,19 @@
               "num": 0
             }
           ],
-          "statFilters": {},
+          "statFilters": {
+            "enerRech_": 188.9,
+            "critRate_": 0
+          },
           "mainStatKeys": {
             "sands": [],
             "goblet": [],
             "circlet": []
           },
+          "optimizationTarget": [
+            "skill",
+            "holdCryoShield"
+          ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
           "useEquippedArts": true,
@@ -357,27 +1295,29 @@
         }
       },
       {
-        "key": "Venti",
-        "level": 90,
-        "ascension": 6,
+        "key": "Aloy",
+        "level": 20,
+        "ascension": 1,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "Venti": {
-            "burstAbsorption": "cryo"
+          "BlizzardStrayer": {
+            "state": "frozen"
           },
-          "ViridescentVenerer": {
-            "swirlcryo": "swirl"
+          "NoblesseOblige": {
+            "set4": "on"
           }
         },
-        "bonusStats": {},
+        "bonusStats": {
+          "critRate_": 15
+        },
         "enemyOverride": {
-          "cryo_enemyRes_": 10
+          "cryo_enemyRes_": -30
         },
         "talent": {
-          "auto": 9,
-          "skill": 9,
-          "burst": 9
+          "auto": 1,
+          "skill": 1,
+          "burst": 1
         },
         "infusionAura": "",
         "constellation": 0,
@@ -387,6 +1327,478 @@
           ""
         ],
         "compareData": false,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "EmblemOfSeveredFate",
+              "num": 2
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 194.3
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "burst",
+            "dmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "KujouSara",
+        "level": 60,
+        "ascension": 4,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "KujouSara": {}
+        },
+        "bonusStats": {
+          "all_dmg_": 15
+        },
+        "enemyOverride": {},
+        "talent": {
+          "auto": 1,
+          "skill": 6,
+          "burst": 1
+        },
+        "infusionAura": "",
+        "constellation": 6,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": false,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 238.5
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "burst",
+            "titanbreaker"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Ganyu",
+        "level": 80,
+        "ascension": 6,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "AmosBow": {
+            "StrongWilled": "3"
+          },
+          "resonance": {
+            "ShatteringIce": "on"
+          },
+          "Ganyu": {
+            "A4": "on",
+            "A1": "on"
+          },
+          "BlizzardStrayer": {
+            "state": "frozen"
+          },
+          "PaleFlame": {
+            "stacks": "1"
+          },
+          "ShimenawasReminiscence": {}
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 8,
+          "skill": 5,
+          "burst": 7
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "KamisatoAyaka",
+          "SangonomiyaKokomi",
+          "Venti"
+        ],
+        "compareData": true,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 100
+          },
+          "mainStatKeys": {
+            "sands": [
+              "atk_"
+            ],
+            "goblet": [
+              "cryo_dmg_",
+              "atk_"
+            ],
+            "circlet": [
+              "critRate_",
+              "atk_",
+              "critDMG_"
+            ]
+          },
+          "optimizationTarget": [
+            "burst",
+            "dmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 1,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Kaeya",
+        "level": 50,
+        "ascension": 2,
+        "hitMode": "avgHit",
+        "reactionMode": "cryo_melt",
+        "conditional": {
+          "LionsRoar": {
+            "BaneOfFireAndThunder": "on"
+          }
+        },
+        "bonusStats": {
+          "atk_": 45,
+          "atk": 928,
+          "critRate_": 10.5
+        },
+        "enemyOverride": {},
+        "talent": {
+          "auto": 2,
+          "skill": 2,
+          "burst": 2
+        },
+        "infusionAura": "",
+        "constellation": 1,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "EmblemOfSeveredFate",
+              "num": 2
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 201.8
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "burst",
+            "dmg"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Amber",
+        "level": 60,
+        "ascension": 3,
+        "hitMode": "avgHit",
+        "reactionMode": "pyro_melt",
+        "conditional": {},
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 4,
+          "skill": 4,
+          "burst": 4
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": false,
+        "favorite": false
+      },
+      {
+        "key": "SangonomiyaKokomi",
+        "level": 61,
+        "ascension": 4,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "SangonomiyaKokomi": {},
+          "TenacityOfTheMillelith": {
+            "skill": "cast"
+          },
+          "ThrillingTalesOfDragonSlayers": {},
+          "resonance": {
+            "ShatteringIce": "on"
+          }
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 1,
+          "skill": 6,
+          "burst": 1
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "KamisatoAyaka",
+          "Ganyu",
+          "Venti"
+        ],
+        "compareData": false,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "TenacityOfTheMillelith",
+              "num": 4
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {},
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "skill",
+            "heal"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Yanfei",
+        "level": 20,
+        "ascension": 1,
+        "hitMode": "avgHit",
+        "reactionMode": "pyro_vaporize",
+        "conditional": {
+          "Instructor": {
+            "set4": "on"
+          },
+          "Yanfei": {
+            "afterBurst": "on",
+            "p1Seals": "3"
+          },
+          "CrimsonWitchOfFlames": {
+            "stack": "1"
+          },
+          "PaleFlame": {
+            "stacks": "1"
+          },
+          "HeartOfDepth": {
+            "skill": "cast"
+          },
+          "VermillionHereafter": {},
+          "MartialArtist": {
+            "state": "on"
+          }
+        },
+        "bonusStats": {
+          "atk_": 65,
+          "atk": 928,
+          "eleMas": 120
+        },
+        "enemyOverride": {},
+        "talent": {
+          "auto": 1,
+          "skill": 1,
+          "burst": 1
+        },
+        "infusionAura": "",
+        "constellation": 3,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {},
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "charged",
+            "3"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        },
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false
+      },
+      {
+        "key": "Venti",
+        "level": 70,
+        "ascension": 4,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "ViridescentVenerer": {
+            "swirlcryo": "cryo"
+          },
+          "Venti": {
+            "burstAbsorption": "cryo"
+          }
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 1,
+          "skill": 1,
+          "burst": 4
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "KamisatoAyaka",
+          "Ganyu",
+          "SangonomiyaKokomi"
+        ],
+        "compareData": true,
         "favorite": false,
         "buildSettings": {
           "setFilters": [
@@ -404,23 +1816,12 @@
             }
           ],
           "statFilters": {
-            "enerRech_": 130
+            "enerRech_": 180
           },
           "mainStatKeys": {
-            "sands": [
-              "eleMas",
-              "atk_",
-              "enerRech_"
-            ],
-            "goblet": [
-              "eleMas",
-              "anemo_dmg_"
-            ],
-            "circlet": [
-              "eleMas",
-              "critRate_",
-              "critDMG_"
-            ]
+            "sands": [],
+            "goblet": [],
+            "circlet": []
           },
           "optimizationTarget": [
             "burst",
@@ -434,25 +1835,103 @@
           "maxBuildsToShow": 1,
           "plotBase": "enerRech_",
           "compareBuild": true,
-          "levelLow": 1,
+          "levelLow": 0,
           "levelHigh": 20
         }
       },
       {
-        "key": "Sucrose",
-        "level": 1,
-        "ascension": 0,
+        "key": "Eula",
+        "level": 80,
+        "ascension": 6,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "ThrillingTalesOfDragonSlayers": {
-            "Heritage": "on"
-          },
-          "ViridescentVenerer": {
-            "swirlelectro": "swirl"
+          "SerpentSpine": {
+            "Wavesplitter": "4"
           }
         },
-        "bonusStats": {},
+        "bonusStats": {
+          "atk": 928,
+          "atk_": 45,
+          "critRate_": 10.5
+        },
+        "enemyOverride": {
+          "physical_enemyRes_": -10
+        },
+        "talent": {
+          "auto": 8,
+          "skill": 6,
+          "burst": 8
+        },
+        "infusionAura": "",
+        "constellation": 0,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": false,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "EmblemOfSeveredFate",
+              "num": 2
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 215.9
+          },
+          "mainStatKeys": {
+            "sands": [
+              "enerRech_"
+            ],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "burst",
+            "lightFallSwordNew"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "enerRech_",
+          "compareBuild": true,
+          "levelLow": 0,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Diluc",
+        "level": 20,
+        "ascension": 1,
+        "hitMode": "avgHit",
+        "reactionMode": "pyro_vaporize",
+        "conditional": {
+          "Diluc": {
+            "Burst": "on"
+          },
+          "SerpentSpine": {
+            "Wavesplitter": "3"
+          }
+        },
+        "bonusStats": {
+          "atk": 928,
+          "atk_": 40,
+          "eleMas": 120
+        },
         "enemyOverride": {},
         "talent": {
           "auto": 1,
@@ -462,7 +1941,7 @@
         "infusionAura": "",
         "constellation": 0,
         "team": [
-          "Beidou",
+          "",
           "",
           ""
         ],
@@ -489,6 +1968,82 @@
             "goblet": [],
             "circlet": []
           },
+          "optimizationTarget": [
+            "skill",
+            "firstHit"
+          ],
+          "mainStatAssumptionLevel": 0,
+          "useExcludedArts": false,
+          "useEquippedArts": true,
+          "builds": [],
+          "buildDate": 0,
+          "maxBuildsToShow": 1,
+          "plotBase": "",
+          "compareBuild": true,
+          "levelLow": 1,
+          "levelHigh": 20
+        }
+      },
+      {
+        "key": "Mona",
+        "level": 20,
+        "ascension": 1,
+        "hitMode": "avgHit",
+        "reactionMode": "",
+        "conditional": {
+          "PrototypeAmber": {
+            "Gliding": "on"
+          },
+          "NoblesseOblige": {
+            "set4": "on"
+          },
+          "resonance": {
+            "ShatteringIce": "on"
+          }
+        },
+        "bonusStats": {},
+        "enemyOverride": {},
+        "talent": {
+          "auto": 1,
+          "skill": 1,
+          "burst": 1
+        },
+        "infusionAura": "",
+        "constellation": 1,
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": false,
+        "favorite": false,
+        "buildSettings": {
+          "setFilters": [
+            {
+              "key": "NoblesseOblige",
+              "num": 4
+            },
+            {
+              "key": "",
+              "num": 0
+            },
+            {
+              "key": "",
+              "num": 0
+            }
+          ],
+          "statFilters": {
+            "enerRech_": 138.9
+          },
+          "mainStatKeys": {
+            "sands": [],
+            "goblet": [],
+            "circlet": []
+          },
+          "optimizationTarget": [
+            "weapon:PrototypeAmber",
+            "heal"
+          ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
           "useEquippedArts": true,
@@ -502,32 +2057,27 @@
         }
       },
       {
-        "key": "Beidou",
-        "level": 90,
-        "ascension": 6,
+        "key": "YunJin",
+        "level": 20,
+        "ascension": 1,
         "hitMode": "avgHit",
         "reactionMode": "",
         "conditional": {
-          "LuxuriousSeaLord": {
-            "OceanicVictory": "on"
+          "YunJin": {
+            "skill": "on"
           }
         },
-        "bonusStats": {},
+        "bonusStats": {
+          "atk_": 25
+        },
         "enemyOverride": {},
         "talent": {
           "auto": 1,
           "skill": 1,
-          "burst": 9
+          "burst": 1
         },
         "infusionAura": "",
-        "constellation": 6,
-        "team": [
-          "Sucrose",
-          "",
-          ""
-        ],
-        "compareData": false,
-        "favorite": false,
+        "constellation": 2,
         "buildSettings": {
           "setFilters": [
             {
@@ -544,142 +2094,101 @@
             }
           ],
           "statFilters": {
-            "enerRech_": 0
+            "enerRech_": 223.4,
+            "critRate_": 33.1
           },
-          "mainStatKeys": {
-            "sands": [
-              "atk_"
-            ],
-            "goblet": [
-              "electro_dmg_",
-              "atk_"
-            ],
-            "circlet": [
-              "critDMG_",
-              "critRate_",
-              "atk_"
-            ]
-          },
-          "optimizationTarget": [
-            "burst",
-            "lightningDmg"
-          ],
-          "mainStatAssumptionLevel": 0,
-          "useExcludedArts": false,
-          "useEquippedArts": true,
-          "builds": [],
-          "buildDate": 0,
-          "maxBuildsToShow": 1,
-          "plotBase": "",
-          "compareBuild": true,
-          "levelLow": 0,
-          "levelHigh": 20
-        }
-      },
-      {
-        "key": "Fischl",
-        "level": 1,
-        "ascension": 0,
-        "hitMode": "avgHit",
-        "reactionMode": "",
-        "conditional": {},
-        "bonusStats": {},
-        "enemyOverride": {},
-        "talent": {
-          "auto": 1,
-          "skill": 1,
-          "burst": 1
-        },
-        "infusionAura": "",
-        "constellation": 0,
-        "team": [
-          "",
-          "",
-          ""
-        ],
-        "compareData": false,
-        "favorite": false,
-        "buildSettings": {
-          "setFilters": [
-            {
-              "key": "",
-              "num": 0
-            },
-            {
-              "key": "",
-              "num": 0
-            },
-            {
-              "key": "",
-              "num": 0
-            }
-          ],
-          "statFilters": {},
           "mainStatKeys": {
             "sands": [],
             "goblet": [],
             "circlet": []
           },
+          "optimizationTarget": [
+            "burst",
+            "dmgInc"
+          ],
           "mainStatAssumptionLevel": 0,
           "useExcludedArts": false,
           "useEquippedArts": true,
           "builds": [],
           "buildDate": 0,
           "maxBuildsToShow": 1,
-          "plotBase": "",
+          "plotBase": "critRate_",
           "compareBuild": true,
           "levelLow": 0,
           "levelHigh": 20
-        }
+        },
+        "team": [
+          "",
+          "",
+          ""
+        ],
+        "compareData": true,
+        "favorite": false
       }
     ],
     "weapons": [
       {
-        "key": "HuntersBow",
-        "level": 1,
+        "key": "RecurveBow",
+        "level": 10,
         "ascension": 0,
         "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "TheStringless",
+        "level": 80,
+        "ascension": 5,
+        "refinement": 2,
         "location": "Fischl",
         "lock": true
       },
       {
-        "key": "ThrillingTalesOfDragonSlayers",
-        "level": 1,
-        "ascension": 0,
-        "refinement": 5,
-        "location": "Sucrose",
-        "lock": true
-      },
-      {
-        "key": "LuxuriousSeaLord",
-        "level": 90,
-        "ascension": 6,
-        "refinement": 5,
-        "location": "Beidou",
-        "lock": true
-      },
-      {
-        "key": "DullBlade",
+        "key": "ApprenticesNotes",
         "level": 1,
         "ascension": 0,
         "refinement": 1,
-        "location": "Xingqiu",
+        "location": "",
         "lock": true
       },
       {
-        "key": "CinnabarSpindle",
-        "level": 90,
-        "ascension": 6,
-        "refinement": 5,
-        "location": "Albedo",
-        "lock": true
-      },
-      {
-        "key": "PrototypeRancour",
-        "level": 90,
-        "ascension": 6,
+        "key": "TheWidsith",
+        "level": 1,
+        "ascension": 0,
         "refinement": 1,
-        "location": "Bennett",
+        "location": "Ningguang",
+        "lock": true
+      },
+      {
+        "key": "WasterGreatsword",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "PrototypeAmber",
+        "level": 50,
+        "ascension": 2,
+        "refinement": 1,
+        "location": "Mona",
+        "lock": true
+      },
+      {
+        "key": "IronSting",
+        "level": 70,
+        "ascension": 4,
+        "refinement": 1,
+        "location": "Jean",
+        "lock": true
+      },
+      {
+        "key": "FavoniusLance",
+        "level": 20,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
         "lock": true
       },
       {
@@ -691,19 +2200,235 @@
         "lock": true
       },
       {
-        "key": "TheStringless",
-        "level": 90,
-        "ascension": 6,
-        "refinement": 3,
+        "key": "HuntersBow",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "SacrificialBow",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "Aloy",
+        "lock": true
+      },
+      {
+        "key": "DragonspineSpear",
+        "level": 70,
+        "ascension": 5,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "ApprenticesNotes",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "SerpentSpine",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "Eula",
+        "lock": true
+      },
+      {
+        "key": "FavoniusWarbow",
+        "level": 70,
+        "ascension": 5,
+        "refinement": 1,
         "location": "Venti",
         "lock": true
       },
       {
-        "key": "IronSting",
+        "key": "SnowTombedStarsilver",
+        "level": 80,
+        "ascension": 5,
+        "refinement": 2,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "DragonsBane",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "WasterGreatsword",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "WasterGreatsword",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "BeginnersProtector",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "CompoundBow",
+        "level": 70,
+        "ascension": 4,
+        "refinement": 1,
+        "location": "Amber",
+        "lock": true
+      },
+      {
+        "key": "DullBlade",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "ThrillingTalesOfDragonSlayers",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 5,
+        "location": "Barbara",
+        "lock": true
+      },
+      {
+        "key": "Deathmatch",
+        "level": 80,
+        "ascension": 6,
+        "refinement": 1,
+        "location": "Rosaria",
+        "lock": true
+      },
+      {
+        "key": "FavoniusSword",
+        "level": 80,
+        "ascension": 5,
+        "refinement": 1,
+        "location": "Keqing",
+        "lock": true
+      },
+      {
+        "key": "BlackTassel",
+        "level": 80,
+        "ascension": 6,
+        "refinement": 5,
+        "location": "Zhongli",
+        "lock": true
+      },
+      {
+        "key": "FavoniusLance",
         "level": 90,
         "ascension": 6,
         "refinement": 1,
-        "location": "KaedeharaKazuha",
+        "location": "YunJin",
+        "lock": true
+      },
+      {
+        "key": "DragonsBane",
+        "level": 90,
+        "ascension": 6,
+        "refinement": 1,
+        "location": "RaidenShogun",
+        "lock": true
+      },
+      {
+        "key": "HuntersBow",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "AmosBow",
+        "level": 90,
+        "ascension": 6,
+        "refinement": 1,
+        "location": "Ganyu",
+        "lock": true
+      },
+      {
+        "key": "FavoniusWarbow",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "Diona",
+        "lock": true
+      },
+      {
+        "key": "MagicGuide",
+        "level": 60,
+        "ascension": 4,
+        "refinement": 4,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "MappaMare",
+        "level": 60,
+        "ascension": 3,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "PrototypeRancour",
+        "level": 50,
+        "ascension": 2,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "AmenomaKageuchi",
+        "level": 90,
+        "ascension": 6,
+        "refinement": 2,
+        "location": "KamisatoAyaka",
+        "lock": true
+      },
+      {
+        "key": "KatsuragikiriNagamasa",
+        "level": 60,
+        "ascension": 4,
+        "refinement": 1,
+        "location": "Sayu",
+        "lock": true
+      },
+      {
+        "key": "DullBlade",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "DullBlade",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "Traveler",
         "lock": true
       },
       {
@@ -712,6 +2437,166 @@
         "ascension": 6,
         "refinement": 5,
         "location": "Xiangling",
+        "lock": true
+      },
+      {
+        "key": "SerpentSpine",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "Diluc",
+        "lock": true
+      },
+      {
+        "key": "DullBlade",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "BeginnersProtector",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "FavoniusGreatsword",
+        "level": 50,
+        "ascension": 2,
+        "refinement": 1,
+        "location": "Chongyun",
+        "lock": true
+      },
+      {
+        "key": "HuntersBow",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "HuntersBow",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "PrototypeRancour",
+        "level": 90,
+        "ascension": 6,
+        "refinement": 1,
+        "location": "Bennett",
+        "lock": true
+      },
+      {
+        "key": "DullBlade",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "SacrificialBow",
+        "level": 80,
+        "ascension": 5,
+        "refinement": 1,
+        "location": "KujouSara",
+        "lock": true
+      },
+      {
+        "key": "WasterGreatsword",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "Whiteblind",
+        "level": 60,
+        "ascension": 4,
+        "refinement": 1,
+        "location": "Noelle",
+        "lock": true
+      },
+      {
+        "key": "ApprenticesNotes",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "SerpentSpine",
+        "level": 90,
+        "ascension": 6,
+        "refinement": 1,
+        "location": "Beidou",
+        "lock": true
+      },
+      {
+        "key": "HakushinRing",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "Lisa",
+        "lock": true
+      },
+      {
+        "key": "FavoniusSword",
+        "level": 90,
+        "ascension": 6,
+        "refinement": 1,
+        "location": "Xingqiu",
+        "lock": true
+      },
+      {
+        "key": "ThrillingTalesOfDragonSlayers",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 5,
+        "location": "Sucrose",
+        "lock": true
+      },
+      {
+        "key": "LionsRoar",
+        "level": 82,
+        "ascension": 6,
+        "refinement": 1,
+        "location": "Kaeya",
+        "lock": true
+      },
+      {
+        "key": "ApprenticesNotes",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "",
+        "lock": true
+      },
+      {
+        "key": "ThrillingTalesOfDragonSlayers",
+        "level": 70,
+        "ascension": 4,
+        "refinement": 5,
+        "location": "SangonomiyaKokomi",
+        "lock": true
+      },
+      {
+        "key": "TheWidsith",
+        "level": 1,
+        "ascension": 0,
+        "refinement": 1,
+        "location": "Yanfei",
         "lock": true
       }
     ]

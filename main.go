@@ -115,6 +115,7 @@ func getConfig() string {
 	//fetch from: https://viewer.gcsim.workers.dev/gcsimdb
 	var data []DBData
 	getJson("https://viewer.gcsim.workers.dev/gcsimdb", &data)
+
 	for _, v := range data {
 		match := true
 		for _, c := range team {
@@ -1408,7 +1409,9 @@ func runSim(cfg string) (data2 jsondata) {
 	}
 
 	jsn, err := os.ReadFile(path + ".json")
-
+	if err != nil {
+		fmt.Printf("error reading db sim: %v\n", err)
+	}
 	data := jsondata{}
 	err2 := json.Unmarshal(jsn, &data)
 	data.DPS = data.DPSraw.Mean
