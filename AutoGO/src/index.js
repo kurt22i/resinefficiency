@@ -68,7 +68,7 @@ async function run() {
                     const img = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div > img`)
                     //const img2 = await img.$(`*star.MuiBox*`)
                     await img.hover()
-                    await page.waitForTimeout(100)
+                    await page.waitForTimeout(200)
                     const artiset = await page.$(`#root ~ div[role="tooltip"]`)
                     //console.log(await artiset)
                     var rawset = await (await artiset.getProperty(`innerText`)).jsonValue()

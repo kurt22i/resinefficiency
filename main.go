@@ -195,9 +195,31 @@ func run() error {
 
 	makeOptiOrder(data)
 
-	runArtifactTest(data.Config)
+	runArtifactTest()
+
+	for i := range guoba {
+		sim := runSim(guobaConfig(i, data.Config))
+		guoba[i].DPS = sim.DPS
+	}
+
+	out, _ := json.Marshal(guoba)
+	//os.Remove(data[i].filepath)
+	os.WriteFile("results.json", out, 0755)
 
 	return nil
+}
+
+func guobaConfig(i int, config string) string {
+
+	lines := strings.Split(config, "\n")
+	for i := range lines { //remove all set and stats lines
+		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
+			lines[i] = ""
+		} else if strings.Contains(lines[i], "add set") {
+			lines[i] = ""
+		}
+	}
+	return strings.Join(lines, "\n") + "\n" + guoba[i].Config
 }
 
 func makeOptiOrder(data jsondata) { //sort the chars by dps in refsim to determine optimization order
@@ -400,17 +422,7 @@ func readURL(url string) (data2 jsondata) {
 	return data
 }
 
-func runArtifactTest(config string) { //params for artifact test: 0: domainid, 1: position in domain q
-
-	lines := strings.Split(config, "\n")
-	for i := range lines { //remove all set and stats lines
-		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
-			lines[i] = ""
-		} else if strings.Contains(lines[i], "add set") {
-			lines[i] = ""
-		}
-	}
-
+func runArtifactTest() { //params for artifact test: 0: domainid, 1: position in domain q
 	for i := range optiorder {
 		makeNewLines(i)
 	}
@@ -511,10 +523,13 @@ func deleteArtis(file string, artistats []float64) {
 		fmt.Printf("%v", err)
 	}
 	rawgood := string(f)
-	artisection := "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "weapons\"")-2]
-	if strings.Contains(file, "gojson0") {
-		//fmt.Printf("%v", artisection)
+	artisection := ""
+	if strings.Index(rawgood, "weapons\"") == -1 {
+		artisection = "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "]}]}")+2]
+	} else {
+		artisection = "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "weapons\"")-2]
 	}
+
 	var artis []GOarti
 	err = json.Unmarshal([]byte(artisection), &artis)
 	//asnowman := subsubs(ar)
