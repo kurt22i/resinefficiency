@@ -17,7 +17,7 @@ async function run() {
 
     // Delete artifacts and settings from template
     delete template.artifacts
-    delete template.states
+    //delete template.states
 
     // Filter out other characters
     if (!template.characters.find(x => x.key == char)) {

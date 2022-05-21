@@ -182,8 +182,8 @@ func personalizeConfig(config string) string {
 		ttlsubs := newsubs()
 		for j := 0; j < 5; j++ {
 			//fmt.Printf("\n\n\n%v,%v", charinfo, GOchars[getCharID(team[i])])
-			charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-250:]
-			if !strings.Contains(charinfo[250:], "weapons") { //strings.Index(charinfo, ",")-1 < 0 {
+			charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-241:]
+			if !strings.Contains(charinfo[241:], "weapons") { //strings.Index(charinfo, ",")-1 < 0 {
 				break //this means no more artis found
 			}
 			//fmt.Printf("%v\n", charinfo[:300])
@@ -1190,9 +1190,9 @@ func farmJSONs(domain int) {
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence", "NoblesseOblige", "BloodstainedChivalry", "CrimsonWitchOfFlames", "Lavawalker"}
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr", "no", "bsc", "cw", "lw"}
 
-var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose", "jean", "chongyun", "yanfei", "keqing", "tartaglia"}
-var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22}
-var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose", "Jean", "Chongyun", "Yanfei", "Keqing", "Tartaglia"}
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose", "jean", "chongyun", "yanfei", "keqing", "tartaglia", "eula", "lisa", "yunjin"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose", "Jean", "Chongyun", "Yanfei", "Keqing", "Tartaglia", "Eula", "Lisa", "YunJin"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
@@ -1212,7 +1212,11 @@ func gcsimArtiName(abbr string) string {
 
 func randomGOarti(domain int) string {
 	arti := "{\"setKey\":\""
+	//if rand.Intn(2) == 0 {
+	//	arti += "MaidenBeloved"
+	//} else {
 	arti += artinames[domain+rand.Intn(2)]
+	//}
 	arti += "\",\"rarity\":5,\"level\":20,\"slotKey\":\""
 	artistats := randomarti()
 	arti += slotKey[int(artistats[10])]

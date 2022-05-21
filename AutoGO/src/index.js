@@ -134,16 +134,16 @@ async function prepareUser(template, user, templateName) {
 
     // Clean up artifact settings
     good.artifacts = good.artifacts.map(a => Object.assign(a, {
-        "location": "",
+        //"location": "",
         "exclude": false,
         "lock": false
     }))
 
     // Enable TC mode
-    good.states = [{
+    /*good.states = [{
         "tcMode": true,
         "key": "GlobalSettings"
-    }]
+    }]*/
 
     return good
 }
