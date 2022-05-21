@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"math"
@@ -48,33 +49,13 @@ var artisonly = false
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
-	flag.IntVar(&artifarmsims, "a", 30, "how many artifact trials to do")
-	flag.IntVar(&artifarmtime, "ft", 126, "how many artifacts to farm")
-	flag.BoolVar(&optiall, "all", false, "reoptimize artifacts on all characters")
-	flag.IntVar(&mode6, "tlmin", 6, "bring talents to a certain level")
-	flag.BoolVar(&mode85, "85", false, "level chars to 85 before 90")
-	flag.BoolVar(&justgenartis, "artigen", false, "just generate artifact jsons")
-	flag.BoolVar(&artisonly, "onlyartis", false, "only test artifacts")
-	teamc := ""
-	flag.StringVar(&teamc, "team", "", "the team to test")
 	flag.StringVar(&referencesim, "url", "", "your simulation")
-	flag.StringVar(&domstring, "d", "", "domains to farm")
-	//flag.StringVar(&manualOverride, "mo", "", "override which artis to sim the result sims with, used when changing sets")
-	//var na = ""
-	//flag.StringVar(&na, "na", "", "chars to skip optimizing for")
 	flag.Parse()
 
 	//noartis = strings.Split(na, ",")
 
-	team = strings.Split(teamc, ",")
 	good2, err2 := os.ReadFile(godatafile)
 	good = string(good2)
-	if team[0] != "" {
-		dbconfig = makeConfig()
-		it := "iteration=" + strconv.Itoa(simspertest)
-		dbconfig = reIter.ReplaceAllString(dbconfig, it)
-		dbconfig = reWorkers.ReplaceAllString(dbconfig, "workers=30")
-	}
 
 	if artifarmsims == -1 {
 		artifarmsims = 10000 / artifarmtime
@@ -91,10 +72,11 @@ func main() {
 	time.Now().UnixNano()
 	rand.Seed(42)
 
+	//fmt.Printf("here")
 	err := run()
 
 	if err != nil || err2 != nil {
-		fmt.Printf("Error encountered, ending script: %+v\n", err2)
+		fmt.Printf("Error encountered, ending script: %+v\n%+v", err2, err)
 	}
 
 	fmt.Print("\ntesting complete (press enter to exit)")
@@ -107,10 +89,7 @@ type DBData struct {
 	ViewerKey string  `json:"viewer_key"`
 }
 
-func makeConfig() string {
-	return personalizeConfig(getConfig())
-}
-
+//https://gcsim.app/viewer/share/perm_fmSSYJ-PJ8oQdyqkMNwV5
 func getConfig() string {
 	//fetch from: https://viewer.gcsim.workers.dev/gcsimdb
 	var data []DBData
@@ -133,128 +112,6 @@ func getConfig() string {
 	return ""
 }
 
-func personalizeConfig(config string) string {
-	if justgenartis {
-		return config
-	}
-
-	lines := strings.Split(config, "\n")
-
-	for i := range lines { //remove all set and stats lines
-		if strings.Contains(lines[i], "char lvl") || strings.Contains(lines[i], "add set") {
-			lines[i] = ""
-		} else if strings.Contains(lines[i], "add weapon") || strings.Contains(lines[i], "add stats") {
-			lines[i] = ""
-		}
-	}
-
-	lines = append(lines, "energy every interval=69,420 amount=100;")
-
-	for i := range team {
-		charinfo := good[strings.Index(good, "key\":\""+GOchars[getCharID(team[i])]):]
-		charinfo = charinfo[strings.Index(charinfo, "level")+1:]
-		lvl := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
-		//0 20 1 40 2 50 3 60 4 70 5 80 6 90
-		charinfo = charinfo[strings.Index(charinfo, "ascension")+1:]
-		maxlvl, _ := strconv.Atoi(charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")])
-		maxlvl = maxlvl*10 + 30
-		if maxlvl == 30 {
-			maxlvl = 20
-		}
-		charinfo = charinfo[strings.Index(charinfo, "talent")+1:]
-		charinfo = charinfo[strings.Index(charinfo, "auto")+1:]
-		aa := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
-		charinfo = charinfo[strings.Index(charinfo, "skill")+1:]
-		e := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
-		charinfo = charinfo[strings.Index(charinfo, "burst")+1:]
-		q := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, "}")]
-		charinfo = charinfo[strings.Index(charinfo, "constellation")+1:]
-		c := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
-		for j := range lines { //we do this so that the characters are declared in the right order, otherwise sim orders them based on action list which messes things up
-			if lines[j] == "" {
-				lines[j] = team[i] + " char lvl=" + lvl + "/" + strconv.Itoa(maxlvl) + " cons=" + c + " talent=" + aa + "," + e + "," + q + ";"
-				break
-			}
-		}
-
-		artisets := []string{"", "", "", "", ""}
-		ascount := []int{0, 0, 0, 0, 0}
-		ttlsubs := newsubs()
-		for j := 0; j < 5; j++ {
-			//fmt.Printf("\n\n\n%v,%v", charinfo, GOchars[getCharID(team[i])])
-			charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-241:]
-			if !strings.Contains(charinfo[241:], "weapons") { //strings.Index(charinfo, ",")-1 < 0 {
-				break //this means no more artis found
-			}
-			//fmt.Printf("%v\n", charinfo[:300])
-			charinfo = charinfo[strings.Index(charinfo, "setKey")+1:]
-			set := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
-			for k, s := range artisets {
-				if s == set {
-					ascount[k]++
-					break
-				} else if s == "" {
-					artisets[k] = set
-					ascount[k]++
-					break
-				}
-			}
-			//this basically assumes mainstats for lvl 20 atm
-			charinfo = charinfo[strings.Index(charinfo, "mainStatKey")+1:]
-			msk := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
-			ttlsubs[getStatID(msk)] += msv[getStatID(msk)]
-			for k := 0; k < 4; k++ {
-				charinfo = charinfo[strings.Index(charinfo, "key")+1:]
-				ssk := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
-				if ssk == "" {
-					continue
-				}
-				charinfo = charinfo[strings.Index(charinfo, "value")+1:]
-				ssv := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, "}")]
-				ssvf64, _ := strconv.ParseFloat(ssv, 64)
-				ttlsubs[getStatID(ssk)] += ssvf64 / float64(ispct[getStatID(ssk)])
-			}
-			charinfo = charinfo[strings.Index(charinfo, "lock")-15:]
-		}
-		lines = append(lines, team[i]+" add stats "+torolls(ttlsubs)+";")
-		for j := range ascount {
-			if ascount[j] >= 2 {
-				additional := ""
-				if artisets[j] == "HuskOfOpulentDreams" {
-					additional = " +params=[stacks=4]"
-				}
-				count := "2"
-				if ascount[j] >= 4 {
-					count = "4"
-				}
-				lines = append(lines, team[i]+" add set=\""+strings.ToLower(artisets[j])+"\" count="+count+additional+";")
-			}
-		}
-		//purposely avoid filtering to only the weapon section here, so that it errors if theres another arti with this location
-		charinfo = charinfo[strings.Index(charinfo, "location\":\""+GOchars[getCharID(team[i])])-100:]
-		charinfo = charinfo[strings.Index(charinfo, "key")+1:]
-		wep := charinfo[strings.Index(charinfo, ":")+2 : strings.Index(charinfo, ",")-1]
-		charinfo = charinfo[strings.Index(charinfo, "level")+1:]
-		lvl = charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
-		//0 20 1 40 2 50 3 60 4 70 5 80 6 90
-		charinfo = charinfo[strings.Index(charinfo, "ascension")+1:]
-		maxlvl, _ = strconv.Atoi(charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")])
-		maxlvl = maxlvl*10 + 30
-		if maxlvl == 30 {
-			maxlvl = 20
-		}
-		charinfo = charinfo[strings.Index(charinfo, "refinement")+1:]
-		r := charinfo[strings.Index(charinfo, ":")+1 : strings.Index(charinfo, ",")]
-		additional := ""
-		if wep == "SerpentSpine" {
-			additional = " +params=[stacks=5]"
-		}
-		lines = append(lines, team[i]+" add weapon=\""+strings.ToLower(wep)+"\" refine="+r+" lvl="+lvl+"/"+strconv.Itoa(maxlvl)+additional+";")
-	}
-
-	return strings.Join(lines, "\n")
-}
-
 var myClient = &http.Client{Timeout: 10 * time.Second}
 
 func getJson(url string, target interface{}) error {
@@ -265,6 +122,13 @@ func getJson(url string, target interface{}) error {
 	defer r.Body.Close()
 
 	return json.NewDecoder(r.Body).Decode(target)
+}
+
+type guobadata struct {
+	Hash      string   `json:"hash"`
+	Good      string   `json:"good"`
+	DPS       float64  `json:"dps"`
+	Artifacts []string `json:"artifacts"`
 }
 
 func run() error {
@@ -291,147 +155,44 @@ func run() error {
 	}
 	os.Mkdir("./tmp", 0755)
 
+	var guoba []guobadata
+
+	err := filepath.Walk("./AutoGO/good", func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
+		//do nothing if is directory
+		if info.IsDir() {
+			return nil
+		}
+		fmt.Printf("\tReading file: %v at %v\n", info.Name(), path)
+		file, err := os.ReadFile(path)
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
+		var d guobadata
+		d.Good = string(file)
+		//err = yaml.Unmarshal(file, &d)
+		if err != nil {
+			return errors.Wrap(err, "")
+		}
+		d.Hash = info.Name()
+		d.Artifacts = []string{"", "", "", ""}
+
+		guoba = append(guoba, d)
+
+		return nil
+	})
+
 	var data jsondata
-	if dbconfig == "" {
-		data = readURL(referencesim)
-	} else {
-		data = runSim(dbconfig)
-	}
+	data = readURL(referencesim)
 	fmt.Println("running tests...")
 
-	//get baseline result
-	baseline := runTest(test{"baseline", []int{0}}, data.Config, data)
-	fmt.Print("\n")
-	printResult(baseline, baseline)
+	makeOptiOrder(data)
 
-	//generate necessary tests
-	tests := getTests(data)
-
-	//run and print the tests (simultaneously, so that users can see data gradually coming in)
-	for _, t := range tests {
-		printResult(runTest(t, data.Config, data), baseline)
-	}
+	runArtifactTest(data.Config)
 
 	return nil
-}
-
-func processdomstring() { //this is ugly
-	domains = strings.Split(domstring, ",")
-	for i := range domains {
-		if strings.Contains(domains[i], "(") {
-			doartisfor := domains[i][strings.Index(domains[i], "(")+1 : len(domains[i])-1]
-			domains[i] = domains[i][:strings.Index(domains[i], "(")]
-			settings := ""
-			if strings.Contains(doartisfor, "|") {
-				settings = doartisfor[strings.Index(doartisfor, "|")+1:]
-				doartisfor = doartisfor[:strings.Index(doartisfor, "|")]
-			}
-			manualOverride[i] = settings
-			optifor[i] = doartisfor
-		}
-		if optiall {
-			optifor[i] = optiorder[i]
-		}
-	}
-}
-
-func getTests(data jsondata) (tt []test) { //in future, auto skip tests of talents that are not used in the config
-	tests := make([]test, 0)
-	for i, c := range data.Characters { //should split this into functions
-		//add level tests
-		newlevel := (c.Level/10 + 1) * 10
-		if newlevel < 40 && newlevel != 20 {
-			newlevel += 10
-		}
-		newmax := newlevel + 10
-		if newmax < 40 {
-			newmax = 40 //could just do this with math.max, but it require floats for some reason
-		}
-		if newlevel >= 90 {
-			newlevel = 90
-			if mode85 && c.Level < 85 {
-				newlevel = 85
-			}
-		}
-		//fmt.Printf("%v", c)
-		if c.Level < 90 && c.Level != c.MaxLvl { //levelup test
-			tests = append(tests, test{"level", []int{i, newlevel, c.MaxLvl}})
-		} else if c.Level < 90 { //levelup and ascension test
-			newmax -= 10
-			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
-			newlevel -= 10
-			if newlevel == 75 {
-				newlevel += 5
-			}
-		}
-		if c.MaxLvl < 90 { //ascension test
-			tests = append(tests, test{"level", []int{i, newlevel, newmax}})
-		}
-
-		//add talent tests
-		talents := []int{c.Talents.Attack, c.Talents.Skill, c.Talents.Burst}
-		for j, t := range talents {
-			if t == 10 {
-				continue
-			}
-			//talent maxlevel reqs: 2 50, 3/4 60, 5/6 70, 7/8 80, 9/10 90
-			lvlneed := 10*(t/2) + 50
-			if c.MaxLvl < lvlneed { //talent test that requires ascension
-				tests = append(tests, test{"talent", []int{i, j, t + 1, 1, newmax - 10, newmax}})
-			} else if c.MaxLvl >= 70 && t < mode6 && mode6 != 0 { //new: upgrade talents below 6 to 6 if possible, because 1->2 is too small to accurately say anything
-				tests = append(tests, test{"talent", []int{i, j, mode6, 0, -2, -2}})
-			} else { //talent test without ascension
-				tests = append(tests, test{"talent", []int{i, j, t + 1, 0, -2, -2}})
-			}
-		}
-
-		//add weapon tests
-		newlevel = (c.Weapon.Level/10 + 1) * 10
-		if newlevel < 40 && newlevel != 20 {
-			newlevel += 10
-		}
-		newmax = newlevel + 10
-		if newmax < 40 {
-			newmax = 40 //could just do this with math.max, but it require floats for some reason
-		}
-		if newlevel > 90 {
-			newlevel = 90
-		}
-		if c.Weapon.Level < 90 && c.Weapon.Level != c.Weapon.MaxLvl { //levelup test
-			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, c.Weapon.MaxLvl}})
-		} else if c.Weapon.Level < 90 { //levelup and ascension test
-			newmax -= 10
-			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
-			newlevel -= 10
-			if newlevel == 30 {
-				newlevel -= 10
-			}
-		}
-		if c.Weapon.MaxLvl < 90 { //ascension test
-			tests = append(tests, test{"weapon", []int{i, rarity(c.Weapon.Name), newlevel, newmax}})
-		}
-
-		//add artifact test
-		//tests = append(tests, test{"artifact", []int{i}})
-	}
-
-	//if only artis, remove all the tests above
-	if artisonly {
-		tests = make([]test, 0)
-	}
-
-	//artifact tests
-	makeOptiOrder(data) //generate the order in which to optimize the chars
-	processdomstring()
-	if domains[0] == "" { //if the user didnt specify, farm the sim domains
-		//todo
-	} else {
-		for i, d := range domains {
-			tests = append(tests, test{"artifact", []int{domainid(d), i}})
-		}
-	}
-
-	return tests
 }
 
 func makeOptiOrder(data jsondata) { //sort the chars by dps in refsim to determine optimization order
@@ -489,19 +250,6 @@ func rarity(wep string) int {
 		data.Rarity = 3
 	}
 	return data.Rarity
-}
-
-func printResult(res, base result) {
-	info := res.info + ":"
-	dps := "DPS: " + fmt.Sprintf("%.0f", res.DPS)
-	if res.resin == -1 {
-		fmt.Printf("%-40v%-30v\n", info, dps)
-		return
-	}
-	dps += " (+" + fmt.Sprintf("%.0f", res.DPS-base.DPS) + ")"
-	resin := "Resin: " + fmt.Sprintf("%.0f", res.resin)
-	dpsresin := "DPS/Resin: " + fmt.Sprintf("%.2f", math.Max((res.DPS-base.DPS)/res.resin, 0.0))
-	fmt.Printf("%-40v%-30v%-30v%-24v\n", info, dps, resin, dpsresin)
 }
 
 func download(path string, url string) error {
@@ -576,19 +324,6 @@ type wepjson struct {
 	Rarity  int
 }
 
-type result struct {
-	info  string
-	DPS   float64
-	resin float64
-}
-
-type test struct {
-	typ    string
-	params []int
-}
-
-const PurpleBookXP = 20000
-
 var reIter = regexp.MustCompile(`iteration=(\d+)`)
 var reWorkers = regexp.MustCompile(`workers=(\d+)`)
 
@@ -660,254 +395,14 @@ func readURL(url string) (data2 jsondata) {
 	return data
 }
 
-func runTest(t test, config string, baseline jsondata) (res result) {
-	var simdata jsondata
-
-	switch t.typ {
-	case "baseline":
-		simdata = runSim(config)
-	case "level":
-		simdata = runSim(runLevelTest(t, config))
-	case "talent":
-		//fmt.Printf("%vt%v", t, config)
-		simdata = runSim(runTalentTest(t, config))
-	case "weapon":
-		simdata = runSim(runWeaponTest(t, config))
-	case "artifact":
-		simdata = runSim(runArtifactTest(t, config))
-	default:
-		fmt.Printf("invalid test type %v??", t.typ)
-	}
-
-	return generateResult(t, simdata, baseline)
-}
-
-func generateResult(t test, sd jsondata, base jsondata) (res2 result) {
-	return result{desc(t, sd), sd.DPS, resin(t, base)}
-}
-
-func desc(t test, sd jsondata) (dsc string) {
-	switch t.typ {
-	case "baseline":
-		return "current"
-	case "level":
-		return sd.Characters[t.params[0]].Name + " to " + strconv.Itoa(t.params[1]) + "/" + strconv.Itoa(t.params[2])
-	case "talent":
-		talent := "aa"
-		if t.params[1] == 1 {
-			talent = "e"
-		} else if t.params[1] == 2 {
-			talent = "q"
-		}
-		ascension := ""
-		if t.params[3] == 1 {
-			ascension = " (requires ascension)"
-		}
-		return sd.Characters[t.params[0]].Name + " " + talent + " to " + strconv.Itoa(t.params[2]) + ascension
-	case "weapon":
-		if sd.Characters[t.params[0]].Weapon.Name == "thrillingtalesofdragonslayers" { //ttds is too long and breaks the formatting, so we need a (ugly) manual override :derpfei:
-			return sd.Characters[t.params[0]].Name + "'s ttds to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
-		}
-		return sd.Characters[t.params[0]].Name + "'s " + sd.Characters[t.params[0]].Weapon.Name + " to " + strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3])
-	case "artifact":
-		//return sd.Characters[t.params[0]].Name + " artifacts"
-		return "farm " + artiabbrs[t.params[0]] + " domain for " + fmt.Sprintf("%.1f", float64(artifarmtime)/(9.0*1.07)) + " days"
-	default:
-		fmt.Printf("invalid test type %v??", t.typ)
-	}
-	return ""
-}
-
-var talentmora = []int{125, 175, 250, 300, 375, 1200, 2600, 4500, 7000}
-var talentbks = []int{3, 6, 12, 18, 27, 36, 54, 108, 144}
-
-type materials struct {
-	mora        int
-	books       float64 //measured in purple books
-	bossmats    int     //for example, hoarfrost core. Currently we assume gemstones aren't important/worth counting resin for because of azoth dust, but in the future we could have options instead of assumptions.
-	talentbooks int     //measured in teachings
-	weaponmats  int     //measured in the lowest level
-	artifacts   int
-}
-
-var wpmats = [][]int{{2, 2 * 3, 4 * 3, 2 * 9, 4 * 9, 3 * 27}, {3, 3 * 3, 6 * 3, 3 * 9, 6 * 9, 4 * 27}, {5, 5 * 3, 9 * 3, 5 * 9, 9 * 9, 6 * 27}}
-var wpmora = [][]int{{5, 10, 15, 20, 25, 30}, {5, 15, 20, 30, 35, 45}, {10, 20, 30, 45, 55, 65}}
-
-func resin(t test, sd jsondata) (rsn float64) {
-	mats := materials{0, 0.0, 0, 0, 0, 0}
-
-	switch t.typ {
-	case "baseline":
-		return -1
-	case "level":
-		mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[1]-1) / PurpleBookXP
-		mats.mora = int(math.Floor(mats.books/5.0)) * PurpleBookXP
-		if t.params[2] != sd.Characters[t.params[0]].MaxLvl { //if we ascended
-			mats.mora += 20000 * (t.params[2] - 30) / 10
-			mats.bossmats += int(math.Floor((float64(t.params[2])-30.0)/10.0*(float64(t.params[2])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[2])-80.0)/5.0)
-		}
-	case "talent":
-		if t.params[2] == mode6 && t.params[3] == 0 { //this whole function is ugly, but this part especially. functionality first tho
-			talents := []int{sd.Characters[t.params[0]].Talents.Attack, sd.Characters[t.params[0]].Talents.Skill, sd.Characters[t.params[0]].Talents.Burst}
-			for i := talents[t.params[1]] + 1; i <= mode6; i++ {
-				mats.mora += talentmora[i-2] * 100
-				mats.talentbooks += talentbks[i-2]
-			}
-		} else {
-			mats.mora += talentmora[t.params[2]-2] * 100
-			mats.talentbooks += talentbks[t.params[2]-2]
-			if t.params[3] == 1 {
-				mats.books += xptolvl(sd.Characters[t.params[0]].Level-1, t.params[4]-1) / PurpleBookXP
-				mats.mora += int(math.Floor(mats.books/5.0)) * PurpleBookXP
-				mats.mora += 20000 * (t.params[5] - 30) / 10
-				mats.bossmats += int(math.Floor((float64(t.params[5])-30.0)/10.0*(float64(t.params[5])-30.0)/10.0/2.0)) + int(math.Max(0, float64(t.params[5])-80.0)/5.0)
-			}
-		}
-	case "weapon":
-		mats.mora += (wpexp[t.params[1]-3][t.params[2]-1] - wpexp[t.params[1]-3][sd.Characters[t.params[0]].Weapon.Level-1]) / 10
-		if t.params[3] != sd.Characters[t.params[0]].Weapon.MaxLvl { //if we ascended
-			mats.weaponmats += wpmats[t.params[1]-3][(t.params[3]-30)/10-1]
-			mats.mora += wpmora[t.params[1]-3][(t.params[3]-30)/10-1]
-		}
-	case "artifact":
-		mats.artifacts += artifarmtime
-	default:
-		fmt.Printf("invalid test type %v??", t.typ)
-	}
-
-	return resinformats(mats)
-}
-
-func xptolvl(l1 int, l2 int) (xp float64) {
-	return float64(crexp[l2] - crexp[l1])
-}
-
-var resinrates = []float64{ //1 resin = x of this
-	60000 / 20,                                    //mora
-	122500.0 / PurpleBookXP / 20.0,                //xp books
-	255.0 / 4000.0,                                //bossmats
-	(2.2 + 1.97*3.0 + 0.23*9.0) / 20.0,            //talent books
-	(2.2 + 2.4*3.0 + 0.64*9.0 + 0.07*27.0) / 20.0, //weapon mats
-	107.0 / 2000.0,                                //artifacts
-}
-
-func resinformats(mats materials) (rsn float64) {
-	resin := float64(mats.mora) / resinrates[0]
-	resin += mats.books / resinrates[1]
-	resin += float64(mats.bossmats) / resinrates[2]
-	resin += float64(mats.talentbooks) / resinrates[3]
-	resin += float64(mats.weaponmats) / resinrates[4]
-	resin += float64(mats.artifacts) / resinrates[5]
-	return resin
-}
-
-//these 3 test functions below should probably go in a diff file
-func runLevelTest(t test, config string) (c string) { //params for level test: 0: charid 1: new level 2: new max level
-	lines := strings.Split(config, "\n")
-	count := 0
-	curline := -1
-	//fmt.Printf("\n\n%v", config)
-	for count <= t.params[0] {
-		curline++
-		if strings.Contains(lines[curline], "char lvl") {
-			count++
-		}
-	}
-
-	newline := lines[curline][0 : strings.Index(lines[curline], "lvl")+4]
-	newline += strconv.Itoa(t.params[1]) + "/" + strconv.Itoa(t.params[2])
-	newline += lines[curline][strings.Index(lines[curline], " cons"):]
-	lines[curline] = newline
-
-	return strings.Join(lines, "\n")
-}
-
-func runTalentTest(t test, config string) (c string) { //params for talent test: 0: charid 1: talent id (aa/e/q) 2: new level 3: requires ascension (0 or 1) 4: new level (if needed) 5: new max level (if needed)
-	cfg := config
-	if t.params[3] == 1 { //increase the level if upgrading the talent requires ascension
-		cfg = runLevelTest(test{"thisshouldntmatter", []int{t.params[0], t.params[4], t.params[5]}}, config)
-	}
-
-	lines := strings.Split(cfg, "\n")
-	count := 0
-	curline := -1
-	for count <= t.params[0] {
-		curline++
-		if strings.Contains(lines[curline], "char lvl") {
-			count++
-		}
-	}
-
-	//10 makes this really annoying because it's two chars instead of one
-	start := strings.Index(lines[curline], "talent=") + 6
-	end := strings.Index(lines[curline], ",")
-
-	if t.params[1] >= 1 { // upgrading e talent
-		start = end
-		end = start + strings.Index(lines[curline][start+1:], ",") + 1
-	}
-
-	if t.params[1] == 2 { //upgrading q talent
-		start = end
-		end = strings.Index(lines[curline], ";")
-	}
-
-	newline := lines[curline][:start+1]
-	newline += strconv.Itoa(t.params[2])
-	newline += lines[curline][end:]
-	lines[curline] = newline
-
-	return strings.Join(lines, "\n")
-}
-
-func runWeaponTest(t test, config string) (c string) { //params for weapon test: 0: charid 1: weapon *s 2: new level 3: new max level
-	lines := strings.Split(config, "\n")
-	count := 0
-	curline := -1
-	for count <= t.params[0] {
-		curline++
-		if strings.Contains(lines[curline], "refine=") {
-			count++
-		}
-	}
-
-	newline := lines[curline][0 : strings.Index(lines[curline], "lvl")+4]
-	newline += strconv.Itoa(t.params[2]) + "/" + strconv.Itoa(t.params[3]) + ";"
-	lines[curline] = newline
-
-	return strings.Join(lines, "\n")
-}
-
-type subrolls struct {
-	Atk  float64
-	AtkP float64
-	HP   float64
-	HPP  float64
-	Def  float64
-	DefP float64
-	EM   float64
-	ER   float64
-	CR   float64
-	CD   float64
-}
-
-func runArtifactTest(t test, config string) (c string) { //params for artifact test: 0: domainid, 1: position in domain q
+func runArtifactTest(config string) (c string) { //params for artifact test: 0: domainid, 1: position in domain q
 	lines := strings.Split(config, "\n")
 
 	for i := range lines { //remove all set and stats lines
 		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
-			skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
-			if strings.Contains(optifor[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) || optifor[t.params[1]] == "" {
-				skip = false
-			}
-			if skip {
-				continue
-			}
 			lines[i] = ""
 		} else if strings.Contains(lines[i], "add set") {
-			if strings.Contains(manualOverride[t.params[1]], lines[i][:strings.Index(lines[i], " ")-1]) {
-				lines[i] = ""
-			}
+			lines[i] = ""
 		}
 	}
 
