@@ -46,6 +46,7 @@ var mode85 = false
 var optiall = false
 var justgenartis = false
 var artisonly = false
+var guoba []guobadata
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
@@ -129,6 +130,7 @@ type guobadata struct {
 	Good      string   `json:"good"`
 	DPS       float64  `json:"dps"`
 	Artifacts []string `json:"artifacts"`
+	Config    string
 }
 
 func run() error {
@@ -155,9 +157,7 @@ func run() error {
 	}
 	os.Mkdir("./tmp", 0755)
 
-	var guoba []guobadata
-
-	err := filepath.Walk("./AutoGO/good", func(path string, info fs.FileInfo, err error) error {
+	err2 := filepath.Walk("./AutoGO/good", func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "")
 		}
@@ -178,11 +178,16 @@ func run() error {
 		}
 		d.Hash = info.Name()
 		d.Artifacts = []string{"", "", "", ""}
+		d.Config = ""
 
 		guoba = append(guoba, d)
 
 		return nil
 	})
+
+	if err2 != nil {
+		return errors.Wrap(err2, "")
+	}
 
 	var data jsondata
 	data = readURL(referencesim)
@@ -395,9 +400,9 @@ func readURL(url string) (data2 jsondata) {
 	return data
 }
 
-func runArtifactTest(config string) (c string) { //params for artifact test: 0: domainid, 1: position in domain q
-	lines := strings.Split(config, "\n")
+func runArtifactTest(config string) { //params for artifact test: 0: domainid, 1: position in domain q
 
+	lines := strings.Split(config, "\n")
 	for i := range lines { //remove all set and stats lines
 		if strings.Contains(lines[i], "add stats") { //|| strings.Contains(l, "add set") {
 			lines[i] = ""
@@ -406,24 +411,14 @@ func runArtifactTest(config string) (c string) { //params for artifact test: 0: 
 		}
 	}
 
-	farmJSONs(t.params[0])
 	for i := range optiorder {
-		skip := true //this is really ugly. it's to skip deleting stat lines of chars we wont be optimizing, but it should probably be cleaner lol
-		if strings.Contains(optifor[t.params[1]], optiorder[i]) || optifor[t.params[1]] == "" {
-			skip = false
-		}
-		if skip {
-			continue
-		}
-		lines = append(lines, makeNewLines(i, t.params[1]))
+		makeNewLines(i)
 	}
-
-	return strings.Join(lines, "\n")
 }
 
-func makeNewLines(c, d int) string {
+func makeNewLines(c int) {
 	runAutoGO(c)
-	return parseAGresults(c, d)
+	parseAGresults(c)
 }
 
 func runAutoGO(c int) {
@@ -441,7 +436,7 @@ func runAutoGO(c int) {
 
 func makeTemplate(c int) {
 	//exec.Command("node AutoGO/src/createTemplate.js " + GOchars[getCharID(optiorder[c])] + " tmpl").Output()
-	cmd := exec.Command("cmd", "/C", "node src/createTemplate.js "+GOchars[getCharID(optiorder[c])]+" tmpl good/gojson0.json")
+	cmd := exec.Command("cmd", "/C", "node src/createTemplate.js "+GOchars[getCharID(optiorder[c])]+" tmpl team.json")
 	//cmd := exec.Command("npm run start")
 	cmd.Dir = "./AutoGO"
 	err := cmd.Run()
@@ -466,7 +461,7 @@ type AGresult struct {
 	Data string `json:"data"`
 }
 
-func parseAGresults(c, d int) string {
+func parseAGresults(c int) {
 	jsonData, err := os.ReadFile("./AutoGO/output/tmpl.json")
 	if err != nil {
 		fmt.Printf("%v", err)
@@ -477,40 +472,22 @@ func parseAGresults(c, d int) string {
 		fmt.Printf("%v", err)
 	}
 
-	avgsubs := newsubs()
 	for i := range results { //ttl up all the arti sim iters
-		newsubs := getAGsubs(results[i].Data, results[i].User)
+		if results[i].User != guoba[i].Hash {
+			fmt.Printf("wronguser:%v,%v\n", results[i].User, guoba[i].Hash)
+		}
+		newsubs := getAGsubs(results[i].Data, results[i].User, i, c)
+		guoba[i].Artifacts[c] = results[i].Data
+		guoba[i].Config += optiorder[c] + " add stats " + torolls(newsubs) + ";\n"
 		//fmt.Printf("\n%v", newsubs)
-		avgsubs = addsubs(avgsubs, newsubs)
-		//deleteArtis(results[i].User, newsubs) //delete the artis chosen so that they're not selected again for another char
+		//avgsubs = addsubs(avgsubs, newsubs)
 	}
 
-	for i := range avgsubs { //complete the average
-		avgsubs[i] /= float64(len(results))
-		avgsubs[i] /= float64(ispct[i])
-	}
+	// for i := range avgsubs { //complete the average
+	// 	avgsubs[i] /= float64(len(results))
+	// 	avgsubs[i] /= float64(ispct[i])
+	// }
 
-	newlines := ""
-
-	//we really should count how many arti sims use each set bonus combo, and run sims for each of them (numsims = numregularsims(10000 usually) * % of trials that had this set bonus combo), then avg results..
-	//but for now... manual overrides when switching sets
-	if strings.Contains(manualOverride[d], optiorder[c]) {
-		//fmt.Printf("mo%v,oo%v", manualOverride[d], optiorder[c])
-		override := manualOverride[d][strings.Index(manualOverride[d], optiorder[c]):]
-		if strings.Contains(override, "&") {
-			override = override[:strings.Index(override, "&")]
-		}
-		if strings.Contains(override, "4") {
-			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "4")+1:]) + "\" count=4;\n"
-		} else {
-			override = override[strings.Index(override, "2")+1:]
-			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[:strings.Index(override, "2")]) + "\" count=2;\n"
-			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "2")+1:]) + "\" count=2;\n"
-		}
-	}
-
-	newlines += optiorder[c] + " add stats " + torolls(avgsubs) + ";"
-	return newlines
 }
 
 type GOarti struct {
@@ -582,16 +559,33 @@ func deleteArtis(file string, artistats []float64) {
 	}
 }
 
-func getAGsubs(raw, file string) []float64 {
+func getAGsubs(raw, file string, id, c int) []float64 {
 	subs := newsubs()
 	//fmt.Printf("%v", raw)
 	artis := strings.Split(raw, "|")
+	sets := []string{"", "", "", "", ""}
+	setcounts := []int{0, 0, 0, 0, 0}
 	for _, a := range artis {
 		if a == "" {
 			continue
 		}
 		asubs := newsubs()
-		stats := strings.Split(a, "~")
+		set := a[:strings.Index(a, ":")]
+		found := false
+		curset := 0
+		for !found {
+			if sets[curset] == set {
+				found = true
+				setcounts[curset]++
+			} else if sets[curset] == "" {
+				sets[curset] = set
+				setcounts[curset]++
+				found = true
+			} else {
+				curset++
+			}
+		}
+		stats := strings.Split(a[strings.Index(a, ":")+1:], "~")
 		for _, s := range stats {
 			if s == "" {
 				continue
@@ -612,7 +606,24 @@ func getAGsubs(raw, file string) []float64 {
 		deleteArtis(file, asubs) //delete the artis chosen so that they're not selected again for another char
 		subs = addsubs(subs, asubs)
 	}
+
+	for i := range sets {
+		if setcounts[i] >= 2 {
+			guoba[id].Config += optiorder[c] + " add set=\"" + fixname(sets[i]) + "\" count=" + strconv.Itoa(setcounts[i]) + ";\n"
+		}
+	}
+
 	return subs
+}
+
+func fixname(str string) string {
+	s := str
+	s = strings.Replace(s, "'", "", -1)
+	s = strings.Replace(s, " ", "", -1)
+	// for strings.Index(s," ") > 0 {
+	// 	s = s[:strings.Index(s," ")] + s[strings.Index(s, " ")+1:]
+	// }
+	return strings.ToLower(s)
 }
 
 func newsubs() []float64 { //empty stat array
