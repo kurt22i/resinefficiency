@@ -58,24 +58,19 @@ type Artifact struct {
 	Rarity   int
 }
 
-func readArtifacts() {
-
-}
-
-func domainid(dom string) int { //returns the internal id for an artifact's domain
+func artiid(dom string) int { //returns the internal id for an artifact
 	id := -1
-	for i, a := range artiabbrs {
+	for i, a := range artinames {
 		if dom == a {
 			id = i
 		}
 	}
 
 	if id == -1 {
-		fmt.Printf("no domain found for %v", dom)
+		fmt.Printf("no set found for %v", dom)
 		return -1
 	}
 
-	id = (id / 2) * 2 //if it's odd, subtract one
 	return id
 }
 
@@ -131,9 +126,11 @@ func readArtifacts() {
 	var gartis []GOarti
 	err = json.Unmarshal([]byte(artisection), &artis)
 	//asnowman := subsubs(ar)
-	for i := range artis { //this currently works by looking for an arti with 3 stats = and 1 stat bigger (main stat), should be good enough?
+	for i := range gartis { //this currently works by looking for an arti with 3 stats = and 1 stat bigger (main stat), should be good enough?
 		var art Artifact
-		art.Set = 
+		art.Set = artiabbrs[artiid(gartis[i].SetKey)]
+		art.Lines=0;
+		art.Mainstat=
 		for j, s := range artis[i].Substats {
 			if s.Key == "" || artistats[getStatID(s.Key)] < s.Value {
 				break
@@ -153,22 +150,6 @@ func readArtifacts() {
 		if found {
 			break
 		}
-	}
-
-	if !found {
-		fmt.Printf("failed to delete artifact %v,%v", artistats, err)
-	}
-
-	marsh, err := json.Marshal(artis)
-	if err != nil {
-		fmt.Printf("%v", err)
-	}
-	newas := string(marsh)
-	newas = newas[1:len(newas)-1] + "]"
-	newgood := rawgood[:strings.Index(rawgood, "artifacts\"")+12] + newas + rawgood[strings.Index(rawgood, "weapons\"")-2:]
-	err = os.WriteFile("./AutoGO/good/"+file, []byte(newgood), 0755)
-	if err != nil {
-		fmt.Printf("%v", err)
 	}
 }
 
