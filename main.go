@@ -7,11 +7,8 @@ import (
 	"math"
 	"math/rand"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var referencesim = "https://gcsim.app/viewer/share/BGznqjs62S9w8qxpxPu7w" //link to the gcsim that gives rotation, er reqs and optimization priority. actually no er reqs unless user wants, instead, let them use their er and set infinite energy.
@@ -58,7 +55,7 @@ type Artifact struct {
 	Rarity   int
 }
 
-func artiid(dom string) int { //returns the internal id for an artifact
+func getSetID(dom string) int { //returns the internal id for an artifact
 	id := -1
 	for i, a := range artinames {
 		if dom == a {
@@ -128,28 +125,24 @@ func readArtifacts() {
 	//asnowman := subsubs(ar)
 	for i := range gartis { //this currently works by looking for an arti with 3 stats = and 1 stat bigger (main stat), should be good enough?
 		var art Artifact
-		art.Set = artiabbrs[artiid(gartis[i].SetKey)]
-		art.Lines=0;
-		art.Mainstat=
-		for j, s := range artis[i].Substats {
-			if s.Key == "" || artistats[getStatID(s.Key)] < s.Value {
+		art.Set = artiabbrs[getSetID(gartis[i].SetKey)]
+		art.Lines = 0
+		art.Mainstat = getStatID(gartis[i].MainStatKey)
+		art.Level = gartis[i].Level
+		art.Rarity = gartis[i].Rarity
+		art.Slot = getSlotID(gartis[i].SlotKey)
+		art.Substats = newsubs()
+		art.BestOn = -1
+		art.BestOff = -1
+		art.RVon = -1
+		art.RVoff = -1
+		for j, s := range gartis[i].Substats {
+			if s.Key == "" {
 				break
-			} else if artistats[getStatID(s.Key)] > s.Value {
-				toobig++
-				if toobig >= 2 {
-					break
-				}
 			}
-			if j == 3 {
-				found = true
-				//fmt.Printf("\n%v", artis[i])
-				artis[i] = artis[len(artis)-1]
-				artis = artis[:len(artis)-1]
-			}
+
 		}
-		if found {
-			break
-		}
+		artis = append(artis, art)
 	}
 }
 
@@ -205,6 +198,16 @@ func AGstatid(key string, ispt bool) int {
 
 func getStatID(key string) int {
 	for i, k := range statKey {
+		if k == key {
+			return i
+		}
+	}
+	fmt.Printf("%v not recognized as a key", key)
+	return -1
+}
+
+func getSlotID(key string) int {
+	for i, k := range slotKey {
 		if k == key {
 			return i
 		}
