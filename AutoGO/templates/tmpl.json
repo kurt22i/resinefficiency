@@ -1,6 +1,6 @@
 {
   "templateName": "tmpl",
-  "char": "Xiangling",
+  "char": "Bennett",
   "template": {
     "format": "GOOD",
     "dbVersion": 15,
@@ -76,7 +76,7 @@
           "maxBuildsToShow": 1,
           "plotBase": "heal_",
           "compareBuild": true,
-          "levelLow": 1,
+          "levelLow": 12,
           "levelHigh": 20
         },
         "team": [
@@ -158,7 +158,7 @@
           "maxBuildsToShow": 1,
           "plotBase": "heal_",
           "compareBuild": true,
-          "levelLow": 1,
+          "levelLow": 12,
           "levelHigh": 20
         },
         "team": [
@@ -192,6 +192,13 @@
         },
         "infusionAura": "",
         "constellation": 5,
+        "team": [
+          "Xingqiu",
+          "RaidenShogun",
+          "Xiangling"
+        ],
+        "compareData": false,
+        "favorite": false,
         "buildSettings": {
           "setFilters": [
             {
@@ -227,14 +234,7 @@
           "compareBuild": true,
           "levelLow": 0,
           "levelHigh": 20
-        },
-        "team": [
-          "Xingqiu",
-          "RaidenShogun",
-          "Xiangling"
-        ],
-        "compareData": false,
-        "favorite": false
+        }
       },
       {
         "key": "Xiangling",
@@ -310,7 +310,7 @@
           "maxBuildsToShow": 1,
           "plotBase": "heal_",
           "compareBuild": true,
-          "levelLow": 1,
+          "levelLow": 12,
           "levelHigh": 20
         },
         "team": [
@@ -323,22 +323,6 @@
       }
     ],
     "weapons": [
-      {
-        "key": "LionsRoar",
-        "level": 90,
-        "ascension": 6,
-        "refinement": 3,
-        "location": "Xingqiu",
-        "lock": true
-      },
-      {
-        "key": "FavoniusLance",
-        "level": 90,
-        "ascension": 6,
-        "refinement": 3,
-        "location": "RaidenShogun",
-        "lock": true
-      },
       {
         "key": "TheCatch",
         "level": 90,
@@ -353,6 +337,22 @@
         "ascension": 6,
         "refinement": 1,
         "location": "Bennett",
+        "lock": true
+      },
+      {
+        "key": "LionsRoar",
+        "level": 90,
+        "ascension": 6,
+        "refinement": 3,
+        "location": "Xingqiu",
+        "lock": true
+      },
+      {
+        "key": "FavoniusLance",
+        "level": 90,
+        "ascension": 6,
+        "refinement": 3,
+        "location": "RaidenShogun",
         "lock": true
       }
     ],

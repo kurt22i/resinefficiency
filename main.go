@@ -13,7 +13,6 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
-	"math"
 	"math/rand"
 	"net/http"
 	"os"
@@ -127,10 +126,10 @@ func getJson(url string, target interface{}) error {
 
 type guobadata struct {
 	Hash      string   `json:"hash"`
-	Good      string   `json:"good"`
 	DPS       float64  `json:"dps"`
 	Artifacts []string `json:"artifacts"`
-	Config    string
+	Good      string   `json:"-"`
+	Config    string   `json:"-"`
 }
 
 func run() error {
@@ -200,6 +199,7 @@ func run() error {
 	for i := range guoba {
 		sim := runSim(guobaConfig(i, data.Config))
 		guoba[i].DPS = sim.DPS
+		fmt.Printf("\n%V done", guoba[i].Hash)
 	}
 
 	out, _ := json.Marshal(guoba)
@@ -525,8 +525,17 @@ func deleteArtis(file string, artistats []float64) {
 	rawgood := string(f)
 	artisection := ""
 	if strings.Index(rawgood, "weapons\"") == -1 {
-		artisection = "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "]}]}")+2]
+		if strings.LastIndex(rawgood, "exclude\"") == -1 {
+			//fmt.Printf("whyyyyy\nwhyyy\n%v", rawgood)
+			//artisection = "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "}]}")+4]
+			artisection = "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.LastIndex(rawgood, "}]}")+2]
+		} else {
+			artisection = "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.LastIndex(rawgood, "exclude\"")+strings.LastIndex(rawgood[strings.LastIndex(rawgood, "exclude"):], "}]")+2]
+		}
+	} else if strings.Index(rawgood, "weapons\"") < 100 {
+		artisection = "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "characters\"")-2]
 	} else {
+		//fmt.Printf("whyyyyy\nwhyyy\n%v", rawgood)
 		artisection = "[" + rawgood[strings.Index(rawgood, "artifacts\"")+12:strings.Index(rawgood, "weapons\"")-2]
 	}
 
@@ -558,7 +567,7 @@ func deleteArtis(file string, artistats []float64) {
 	}
 
 	if !found {
-		fmt.Printf("failed to delete artifact %v,%v", artistats, err)
+		fmt.Printf("failed to delete artifact %v,%v,%v,%v", artistats, err, artisection, rawgood)
 	}
 
 	marsh, err := json.Marshal(artis)
@@ -567,7 +576,14 @@ func deleteArtis(file string, artistats []float64) {
 	}
 	newas := string(marsh)
 	newas = newas[1:len(newas)-1] + "]"
-	newgood := rawgood[:strings.Index(rawgood, "artifacts\"")+12] + newas + rawgood[strings.Index(rawgood, "weapons\"")-2:]
+	newgood := ""
+	if strings.Index(rawgood, "weapons\"") == -1 {
+		newgood = rawgood[:strings.Index(rawgood, "artifacts\"")+12] + newas + "}"
+	} else if strings.Index(rawgood, "weapons\"") < 100 {
+		newgood = rawgood[:strings.Index(rawgood, "artifacts\"")+12] + newas + rawgood[strings.Index(rawgood, "characters\"")-2:]
+	} else {
+		newgood = rawgood[:strings.Index(rawgood, "artifacts\"")+12] + newas + rawgood[strings.Index(rawgood, "weapons\"")-2:]
+	}
 	err = os.WriteFile("./AutoGO/good/"+file, []byte(newgood), 0755)
 	if err != nil {
 		fmt.Printf("%v", err)
@@ -620,6 +636,10 @@ func getAGsubs(raw, file string, id, c int) []float64 {
 		}
 		deleteArtis(file, asubs) //delete the artis chosen so that they're not selected again for another char
 		subs = addsubs(subs, asubs)
+	}
+
+	for i := range subs {
+		subs[i] /= float64(ispct[i])
 	}
 
 	for i := range sets {
@@ -790,27 +810,6 @@ func torolls(subs []float64) string {
 	str += " geo%=" + fmt.Sprintf("%f", subs[16])
 	str += " phys%=" + fmt.Sprintf("%f", subs[17])
 	return str
-}
-
-func remove8(subs []float64) []float64 {
-	removed := 0
-	//this is ugly and probably not necessary, but i'm pre-empting issues with modifying newsubs also changing cursubs bc pointers idk
-	newsubs := []float64{subs[0], subs[1], subs[2], subs[3], subs[4], subs[5], subs[6], 0, subs[8], subs[9]}
-	tries := 0
-	for removed < 8 && tries < 1000 {
-		tries++
-		s := rand.Intn(10)
-		if newsubs[s] > 0.5 && s != 7 {
-			newsubs[s] = math.Max(newsubs[s]-1.0, 0.0)
-			removed++
-		}
-	}
-	if tries >= 1000 {
-		fmt.Printf("halp! start %v, got to %v, can't remove more!", subs, newsubs)
-	}
-
-	newsubs[7] = subs[7]
-	return newsubs
 }
 
 func addsubs(s1, s2 []float64) []float64 {
