@@ -18,7 +18,7 @@ async function run() {
         console.log()
         console.log(`Starting template ${templateName}`)
 
-        const url = `https://frzyc.github.io/genshin-optimizer/#/character/${char}/optimize`
+        const url = `https://frzyc.github.io/genshin-optimizer/#/characters/${char}/optimize`
         const outputFile = `output/${templateName}.json`
         const output = await loadOutput(outputFile)
 
@@ -61,9 +61,26 @@ async function run() {
 //document.querySelector("")document.querySelector("#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(6) > div > button > div > div.grad-5star.MuiBox-root.css-14ua1gi > div.MuiChip-root.MuiChip-filled.MuiChip-sizeSmall.MuiChip-colorDefault.MuiChip-filledDefault.css-1iuq2fg > span > h6")
                     var code = "1iuq2fg"
                     if(i==3) {
+                        
+                        //document.querySelector("#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiBox-root.css-14zyaec > div:nth-child(3)")
                         code = "g2t2va"
+                    }//document.querySelector("#mui-34")
+                    const img = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div > img`)
+                    //const img2 = await img.$(`*star.MuiBox*`)
+                    if(img==null) {
+                        continue
                     }
-                    //console.log(i)
+                    await img.hover()
+                    await page.waitForTimeout(300)
+                    const artiset = await page.$(`#root ~ div[role="tooltip"]`)
+                    //console.log(await artiset)
+                    var rawset = await (await artiset.getProperty(`innerText`)).jsonValue()
+                    console.log(rawset)
+                    //if(rawset.indexOf("\n")==0) {
+
+                    //}
+                    str += rawset.substring(0, rawset.indexOf("\n")) + ":"
+                    //console.log(i)document.querySelector("#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiBox-root.css-14zyaec > div:nth-child(2)")
                     //     document.querySelector("#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(5) > div > button > div > div.grad-5star.MuiBox-root.css-14ua1gi > div.MuiChip-root.MuiChip-filled.MuiChip-sizeSmall.MuiChip-colorDefault.MuiChip-filledDefault.css-1iuq2fg > span > h6")
                     //     document.querySelector("#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(4) > div > button > div > div.grad-4star.MuiBox-root.css-14ua1gi > div.MuiChip-root.MuiChip-filled.MuiChip-sizeSmall.MuiChip-colorDefault.MuiChip-filledDefault.css-1iuq2fg > span > h6")
                     const artitype = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div`)// > div.grad-5star.MuiBox-root.css-14ua1gi`)// > div.MuiChip-root.MuiChip-filled.MuiChip-sizeSmall.MuiChip-colorDefault.MuiChip-filledDefault`)//-${code} > span > h6`)
@@ -74,10 +91,12 @@ async function run() {
                     str += await (await artitype2.getProperty("innerText")).jsonValue() + "~"
                     for (let j=0;j<4;j++) {//substats
                         const substat = await page.$(`#root > div.MuiGrid-root.MuiGrid-container.MuiGrid-direction-xs-column.css-14bwzpa > div.MuiContainer-root.MuiContainer-maxWidthXl.css-11xxdke > div > div > div > div.MuiBox-root.css-1821gv5 > div:nth-child(6) > div > div.MuiGrid-root.MuiGrid-container.MuiGrid-spacing-xs-1.css-eujw0i > div:nth-child(${i+2}) > div > button > div > div.MuiBox-root.css-11yya3r > div:nth-child(${j+1}) > span`)
+                        if(substat!=null) {
                         var raw = await (await substat.getProperty(`innerHTML`)).jsonValue()
                         raw = raw.substring(raw.indexOf("icon=")+6)
                         str += raw.substring(0, raw.indexOf("\"")) + "="
                         str += await (await substat.getProperty("innerText")).jsonValue() + "~"
+                        }
                     }
                     str += "|"
                 }
@@ -182,6 +201,8 @@ async function busyWait(page, user) {
         console.log(`${user}: ${text.replace(/\n+/g, " / ")}`)
 
         if (text.startsWith("Generated")) return
+        else if (text.includes("urrent configuration ")) return
+        else if (text.includes("ps! It")) return
     }
 }
 

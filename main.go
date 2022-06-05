@@ -45,6 +45,8 @@ var mode85 = false
 var optiall = false
 var justgenartis = false
 var artisonly = false
+var setcombos = [][]string{{"", "", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "", "", "", "", ""}, {"", "", "", "", "", "", "", "", "", ""}}
+var sccounts = [][]int{{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}
 
 func main() {
 	flag.IntVar(&simspertest, "i", 10000, "sim iterations per test")
@@ -269,7 +271,7 @@ func getJson(url string, target interface{}) error {
 
 func run() error {
 
-	if true {
+	if false {
 		//download nightly cmd line build
 		//https://github.com/genshinsim/gcsim/releases/download/nightly/gcsim.exe
 		//err := download("./gcsim.exe", "https://github.com/genshinsim/gcsim/releases/download/nightly/gcsim.exe")
@@ -278,6 +280,7 @@ func run() error {
 			return errors.Wrap(err, "")
 		}
 	}
+	fmt.Printf("warning: not downloading latest gcsim\n")
 
 	if referencesim == "" && dbconfig == "" {
 		return errors.New("please input either your team with -team or your simulation with -url!")
@@ -999,7 +1002,8 @@ func parseAGresults(c, d int) string {
 
 	//we really should count how many arti sims use each set bonus combo, and run sims for each of them (numsims = numregularsims(10000 usually) * % of trials that had this set bonus combo), then avg results..
 	//but for now... manual overrides when switching sets
-	if strings.Contains(manualOverride[d], optiorder[c]) {
+	// actually... we need to run a sim for each arti trial
+	/*if strings.Contains(manualOverride[d], optiorder[c]) {
 		//fmt.Printf("mo%v,oo%v", manualOverride[d], optiorder[c])
 		override := manualOverride[d][strings.Index(manualOverride[d], optiorder[c]):]
 		if strings.Contains(override, "&") {
@@ -1012,7 +1016,7 @@ func parseAGresults(c, d int) string {
 			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[:strings.Index(override, "2")]) + "\" count=2;\n"
 			newlines += optiorder[c] + " add set=\"" + gcsimArtiName(override[strings.Index(override, "2")+1:]) + "\" count=2;\n"
 		}
-	}
+	}*/
 
 	newlines += optiorder[c] + " add stats " + torolls(avgsubs) + ";"
 	return newlines
@@ -1091,12 +1095,29 @@ func getAGsubs(raw, file string) []float64 {
 	subs := newsubs()
 	//fmt.Printf("%v", raw)
 	artis := strings.Split(raw, "|")
+	sets := []string{"", "", "", "", ""}
+	setcounts := []int{0, 0, 0, 0, 0}
 	for _, a := range artis {
 		if a == "" {
 			continue
 		}
 		asubs := newsubs()
-		stats := strings.Split(a, "~")
+		set := a[:strings.Index(a, ":")]
+		found := false
+		curset := 0
+		for !found {
+			if sets[curset] == set {
+				found = true
+				setcounts[curset]++
+			} else if sets[curset] == "" {
+				sets[curset] = set
+				setcounts[curset]++
+				found = true
+			} else {
+				curset++
+			}
+		}
+		stats := strings.Split(a[strings.Index(a, ":")+1:], "~")
 		for _, s := range stats {
 			if s == "" {
 				continue
@@ -1117,6 +1138,13 @@ func getAGsubs(raw, file string) []float64 {
 		deleteArtis(file, asubs) //delete the artis chosen so that they're not selected again for another char
 		subs = addsubs(subs, asubs)
 	}
+
+	for i := range sets {
+		if setcounts[i] >= 2 {
+			guoba[id].Config += optiorder[c] + " add set=\"" + fixname(sets[i]) + "\" count=" + strconv.Itoa(setcounts[i]) + ";\n"
+		}
+	}
+
 	return subs
 }
 
@@ -1190,9 +1218,9 @@ func farmJSONs(domain int) {
 var artinames = []string{"BlizzardStrayer", "HeartOfDepth", "ViridescentVenerer", "MaidenBeloved", "TenacityOfTheMillelith", "PaleFlame", "HuskOfOpulentDreams", "OceanHuedClam", "ThunderingFury", "Thundersoother", "EmblemOfSeveredFate", "ShimenawasReminiscence", "NoblesseOblige", "BloodstainedChivalry", "CrimsonWitchOfFlames", "Lavawalker"}
 var artiabbrs = []string{"bs", "hod", "vv", "mb", "tom", "pf", "husk", "ohc", "tf", "ts", "esf", "sr", "no", "bsc", "cw", "lw"}
 
-var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose", "jean", "chongyun", "yanfei", "keqing", "tartaglia", "eula", "lisa", "yunjin"}
-var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}
-var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose", "Jean", "Chongyun", "Yanfei", "Keqing", "Tartaglia", "Eula", "Lisa", "YunJin"}
+var simChars = []string{"ganyu", "rosaria", "kokomi", "venti", "ayaka", "mona", "albedo", "fischl", "zhongli", "raiden", "bennett", "xiangling", "xingqiu", "shenhe", "yae", "kazuha", "beidou", "sucrose", "jean", "chongyun", "yanfei", "keqing", "tartaglia", "eula", "lisa", "yunjin", "yelan"}
+var simCharsID = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26}
+var GOchars = []string{"Ganyu", "Rosaria", "SangonomiyaKokomi", "Venti", "KamisatoAyaka", "Mona", "Albedo", "Fischl", "Zhongli", "RaidenShogun", "Bennett", "Xiangling", "Xingqiu", "Shenhe", "YaeMiko", "KaedeharaKazuha", "Beidou", "Sucrose", "Jean", "Chongyun", "Yanfei", "Keqing", "Tartaglia", "Eula", "Lisa", "YunJin", "Yelan"}
 
 var slotKey = []string{"flower", "plume", "sands", "goblet", "circlet"}
 var statKey = []string{"atk", "atk_", "hp", "hp_", "def", "def_", "eleMas", "enerRech_", "critRate_", "critDMG_", "heal_", "pyro_dmg_", "electro_dmg_", "cryo_dmg_", "hydro_dmg_", "anemo_dmg_", "geo_dmg_", "physical_dmg_"}
